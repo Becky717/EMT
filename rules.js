@@ -60,15 +60,15 @@ export function bvmRatePrompt(s) {
   const kid = s.age !== 'adult';
   if (s.pulseless || s.flags.cprIndicated) {
     return s.twoRescuer && kid
-      ? { q: 'Two-rescuer infant/child CPR, no advanced airway. Breaths?', options: ['2 breaths after every 30 compressions', '2 breaths after every 15 compressions', '1 breath every 6 s, no pauses', '1 breath every 2-3 s'], correct: 1, explain: 'Two rescuers on a child or infant use 15:2. One rescuer uses 30:2 at any age.' }
-      : { q: 'CPR, no advanced airway yet. Breaths?', options: ['2 breaths after every 30 compressions', '2 breaths after every 15 compressions', '1 breath every 6 s, no pauses', '1 breath every 2-3 s'], correct: 0, explain: 'Adult CPR is 30:2 (each breath over 1 second, just enough for chest rise) until an advanced airway is placed.' };
+      ? { q: 'Two-rescuer infant/child CPR, no advanced airway. Breaths?', options: ['2 breaths after every 30 compressions', '2 breaths after every 15 compressions', '1 breath every 6 s, no pauses', '1 breath every 2-3 s'], correct: 1, explain: 'Two rescuers on a child or infant use 15:2. One rescuer uses 30:2 at any age.', skill: 'ventRate' }
+      : { q: 'CPR, no advanced airway yet. Breaths?', options: ['2 breaths after every 30 compressions', '2 breaths after every 15 compressions', '1 breath every 6 s, no pauses', '1 breath every 2-3 s'], correct: 0, explain: 'Adult CPR is 30:2 (each breath over 1 second, just enough for chest rise) until an advanced airway is placed.', skill: 'ventRate' };
   }
   return kid
-    ? { q: 'Pulse present, breathing inadequate. Ventilation rate?', options: ['1 breath every 6 s', '1 breath every 2-3 s (20-30/min)', '1 breath every 10 s', 'As fast as you can squeeze'], correct: 1, explain: 'Infants/children with a pulse: 1 breath every 2-3 s. Adults: 1 every 6 s.' }
-    : { q: 'Pulse present, breathing inadequate. Ventilation rate?', options: ['1 breath every 6 s (10/min)', '1 breath every 2-3 s', '1 breath every 10 s', 'As fast as you can squeeze'], correct: 0, explain: 'Adult with a pulse: 1 breath every 6 s, over 1 s each. Over-bagging raises chest pressure and inflates the stomach.' };
+    ? { q: 'Pulse present, breathing inadequate. Ventilation rate?', options: ['1 breath every 6 s', '1 breath every 2-3 s (20-30/min)', '1 breath every 10 s', 'As fast as you can squeeze'], correct: 1, explain: 'Infants/children with a pulse: 1 breath every 2-3 s. Adults: 1 every 6 s.', skill: 'ventRate' }
+    : { q: 'Pulse present, breathing inadequate. Ventilation rate?', options: ['1 breath every 6 s (10/min)', '1 breath every 2-3 s', '1 breath every 10 s', 'As fast as you can squeeze'], correct: 0, explain: 'Adult with a pulse: 1 breath every 6 s, over 1 s each. Over-bagging raises chest pressure and inflates the stomach.', skill: 'ventRate' };
 }
-export const BVM_FLOW_PROMPT = { q: 'Hooking up the BVM. Oxygen flow?', options: ['2-6 L/min', '6-10 L/min', '10-12 L/min', '15 L/min'], correct: 3, explain: 'BVM: 15 L/min (or more) so the reservoir fills, giving nearly 100% O2.' };
-export const ADV_AIRWAY_PROMPT = { q: 'Paramedic placed an advanced airway. How do you ventilate now?', options: ['Keep 30:2, pause for breaths', '1 breath every 6 s, compressions never stop', '1 breath every 2-3 s', '1 breath every 10 s'], correct: 1, explain: 'With an advanced airway: 1 breath every 6 s (10/min) and continuous compressions, no pauses.' };
+export const BVM_FLOW_PROMPT = { q: 'Hooking up the BVM. Oxygen flow?', options: ['2-6 L/min', '6-10 L/min', '10-12 L/min', '15 L/min'], correct: 3, explain: 'BVM: 15 L/min (or more) so the reservoir fills, giving nearly 100% O2.', skill: 'ventRate' };
+export const ADV_AIRWAY_PROMPT = { q: 'Paramedic placed an advanced airway. How do you ventilate now?', options: ['Keep 30:2, pause for breaths', '1 breath every 6 s, compressions never stop', '1 breath every 2-3 s', '1 breath every 10 s'], correct: 1, explain: 'With an advanced airway: 1 breath every 6 s (10/min) and continuous compressions, no pauses.', skill: 'ventRate' };
 
 // ---------- GENERIC RULES (used unless a scenario overrides an action)
 export const GENERIC = {
@@ -97,7 +97,7 @@ export const GENERIC = {
   spo2: (s, api) => { s.reveal.spo2 = true; s.reveal.hr = true; s.flags.spo2 = true; api.info(s.pulseless ? 'Pulse ox reads nothing - no perfusion.' : `Pulse ox on: SpO2 ${Math.round(s.v.spo2)}%.`); },
   bp: (s, api) => { s.reveal.bp = true; s.flags.bpChecked = true; s.flags.bpT = s.t; api.info(s.pulseless ? 'No BP obtainable.' : `BP ${Math.round(s.v.sbp)}/${Math.round(s.v.dbp)}.`); },
   lungs: (s, api) => { s.flags.lungs = true; api.info('Lungs: ' + (s.lungs || 'clear and equal.')); },
-  glucose: (s, api) => { s.reveal.bgl = true; api.info(`Blood glucose ${s.v.bgl ?? 104} mg/dL.`); },
+  glucose: (s, api) => { s.reveal.bgl = true; api.info(`Blood glucose ${Math.round(s.v.bgl ?? 104)} mg/dL.`); },
   posSit: (s, api) => { if (s.v.avpu !== 'A') return api.bad('posSitU', 'Patient can\'t protect their airway sitting up.', 'Altered patients go supine or in the recovery position.'); s.pose = s.flags.sev > 0.4 ? 'tripod' : 'sitting'; s.flags.posSit = true; api.info('Sitting up in a position of comfort.'); },
   posSupine: (s, api) => { s.pose = 'supine'; s.flags.supine = true; api.info('Patient laid flat.'); },
   posRecovery: (s, api) => { s.pose = 'supine'; api.info('Recovery position helps drainage if breathing adequately and no spine concern.'); },
@@ -128,17 +128,17 @@ export const GENERIC = {
       api.say('Partner', 'He\'s gagging - he\'s vomiting! Suction!');
       return api.bad('opaGag', 'Patient gagged and vomited.', 'OPA only if there\'s no gag reflex. A gag reflex = use an NPA instead.', true);
     }
-    api.prompt({ q: 'How do you size the OPA?', options: ['Tip of nose to earlobe', 'Corner of mouth to earlobe / angle of jaw', 'Lips to chin', 'Width of their pinky'], correct: 1, explain: 'OPA: corner of mouth to earlobe or angle of jaw. Nose-to-earlobe is the NPA.', then: () => { s.flags.adjunct = 'opa'; s.flags.airwayOpen = true; s.devices.add('opa'); s.scn.onAdjunct && s.scn.onAdjunct(s, api); } });
+    api.prompt({ q: 'How do you size the OPA?', options: ['Tip of nose to earlobe', 'Corner of mouth to earlobe / angle of jaw', 'Lips to chin', 'Width of their pinky'], correct: 1, explain: 'OPA: corner of mouth to earlobe or angle of jaw. Nose-to-earlobe is the NPA.', skill: 'airwayAdj', then: () => { s.flags.adjunct = 'opa'; s.flags.airwayOpen = true; s.devices.add('opa'); s.scn.onAdjunct && s.scn.onAdjunct(s, api); } });
   },
   npa: (s, api) => {
     if (s.v.avpu === 'A') return api.bad('npaAlert', 'Alert patient doesn\'t need an airway adjunct.', 'Adjuncts are for patients who can\'t keep their own airway open.');
     if (s.flags.facialTrauma) return api.bad('npaFace', 'Facial trauma - avoid NPA.', 'Suspected basilar skull/facial fractures are an NPA contraindication.', true);
-    api.prompt({ q: 'How do you size the NPA?', options: ['Corner of mouth to angle of jaw', 'Tip of nose (nostril) to earlobe', 'Lips to chin', 'Any size, lube optional'], correct: 1, explain: 'NPA: nostril to earlobe, lubricated, bevel toward the septum.', then: () => { s.flags.adjunct = 'npa'; s.flags.airwayOpen = true; s.devices.add('npa'); s.scn.onAdjunct && s.scn.onAdjunct(s, api); } });
+    api.prompt({ q: 'How do you size the NPA?', options: ['Corner of mouth to angle of jaw', 'Tip of nose (nostril) to earlobe', 'Lips to chin', 'Any size, lube optional'], correct: 1, explain: 'NPA: nostril to earlobe, lubricated, bevel toward the septum.', skill: 'airwayAdj', then: () => { s.flags.adjunct = 'npa'; s.flags.airwayOpen = true; s.devices.add('npa'); s.scn.onAdjunct && s.scn.onAdjunct(s, api); } });
   },
   suction: (s, api) => {
     if (!s.vomit && !s.flags.secretions) return api.info('Airway is clear - nothing to suction.');
     const lim = s.age === 'infant' ? 2 : s.age === 'child' ? 1 : 0;
-    api.prompt({ q: `Suctioning this ${s.age}. Max time per attempt?`, options: ['15 seconds', '10 seconds', '5 seconds', '30 seconds'], correct: lim, explain: 'Suction limits: adult 15 s, child 10 s, infant 5 s. Suction on the way OUT, then re-oxygenate.', then: () => { s.vomit = false; s.flags.secretions = false; s.flags.suctioned = true; api.good('Airway cleared.'); s.scn.onSuction && s.scn.onSuction(s, api); } });
+    api.prompt({ q: `Suctioning this ${s.age}. Max time per attempt?`, options: ['15 seconds', '10 seconds', '5 seconds', '30 seconds'], correct: lim, explain: 'Suction limits: adult 15 s, child 10 s, infant 5 s. Suction on the way OUT, then re-oxygenate.', skill: 'airwayAdj', then: () => { s.vomit = false; s.flags.secretions = false; s.flags.suctioned = true; api.good('Airway cleared.'); s.scn.onSuction && s.scn.onSuction(s, api); } });
   },
   cpap: (s, api) => {
     s.devices.add('cpap');
@@ -175,7 +175,7 @@ const speech = (s, who, txt) => { if (s.speech !== txt) { s.speech = txt; s.who 
 export const SCENARIOS = [
 // 1 ------------------------------------------------------------------
 {
-  id: 'asthma', cat: 'Airway', title: 'Asthma attack', age: 'adult',
+  id: 'asthma', tags: ['spo2','lungs'], cat: 'Airway', title: 'Asthma attack', age: 'adult',
   dispatch: '24 y/o female, difficulty breathing. Apartment.',
   setup: s => {
     Object.assign(s.v, { hr: 122, sbp: 142, dbp: 88, rr: 30, spo2: 88, etco2: 48, avpu: 'A', bgl: 112 });
@@ -215,7 +215,7 @@ export const SCENARIOS = [
       if (s.v.avpu !== 'A') return api.bad('albAMS', 'She can\'t use the inhaler now - too drowsy.', 'MDI needs an alert patient who can coordinate a deep breath. Ventilate with BVM.');
       s.flags.alb = (s.flags.alb || 0) + 1;
       if (s.flags.alb > 2) return api.info('Contact medical control before more doses.');
-      api.prompt({ q: 'Before assisting with her inhaler, you confirm:', options: ['Her own Rx, not expired, right dose, alert enough', 'Any inhaler from the ambulance', 'Only that it is blue', 'Nothing - speed matters'], correct: 0, explain: 'EMTs assist with the PATIENT\'S OWN prescribed inhaler: right patient, med, dose, route, date.', then: () => { s.flags.albT = 45; api.good('Assisted 1-2 puffs (spacer). Bronchodilator working...'); } });
+      api.prompt({ q: 'Before assisting with her inhaler, you confirm:', options: ['Her own Rx, not expired, right dose, alert enough', 'Any inhaler from the ambulance', 'Only that it is blue', 'Nothing - speed matters'], correct: 0, explain: 'EMTs assist with the PATIENT\'S OWN prescribed inhaler: right patient, med, dose, route, date.', skill: 'medDose', then: () => { s.flags.albT = 45; api.good('Assisted 1-2 puffs (spacer). Bronchodilator working...'); } });
     },
     posSupine: (s, api) => { s.pose = 'supine'; s.flags.supineT = 25; s.flags.supine = true; api.bad('supine', 'She panics - lying flat makes breathing harder.', 'Breathing-trouble patients usually stay sitting up (position of comfort).'); },
     epi: (s, api) => api.bad('epiAsthma', 'Not in EMT asthma protocol (no anaphylaxis signs).', 'Epi auto-injector is for anaphylaxis; asthma = O2 + her own albuterol.'),
@@ -233,7 +233,7 @@ export const SCENARIOS = [
 },
 // 2 ------------------------------------------------------------------
 {
-  id: 'chf', cat: 'Airway', title: 'CHF / pulmonary edema (CPAP?)', age: 'adult',
+  id: 'chf', tags: ['bpCpap','lungs','spo2'], cat: 'Airway', title: 'CHF / pulmonary edema (CPAP?)', age: 'adult',
   dispatch: '72 y/o male, can\'t breathe, woke up gasping. 2 AM.',
   setup: s => {
     s.variant = Math.random() < 0.5 ? 'hypo' : 'hyper';
@@ -283,7 +283,7 @@ export const SCENARIOS = [
 },
 // 3 ------------------------------------------------------------------
 {
-  id: 'opioid', cat: 'Airway', title: 'Opioid overdose', age: 'adult',
+  id: 'opioid', tags: ['gag','vent','glucose','spo2'], cat: 'Airway', title: 'Opioid overdose', age: 'adult',
   dispatch: '28 y/o male, unresponsive in a restroom.',
   setup: s => {
     Object.assign(s.v, { hr: 54, sbp: 104, dbp: 66, rr: 4, spo2: 76, etco2: 68, avpu: 'P', bgl: 96 });
@@ -322,7 +322,7 @@ export const SCENARIOS = [
   actions: {
     naloxone: (s, api) => {
       if (s.flags.nalT != null) return api.info('Already given - give it time and keep ventilating.');
-      api.prompt({ q: 'Naloxone dose/route at EMT level?', options: ['4 mg intranasal (per protocol)', '50 mg by mouth', '0.4 mg chewed', 'Into the airway'], correct: 0, explain: 'Intranasal naloxone (commonly 2-4 mg; 4 mg nasal spray). Ventilate first - it takes a few minutes to work.', then: () => {
+      api.prompt({ q: 'Naloxone dose/route at EMT level?', options: ['4 mg intranasal (per protocol)', '50 mg by mouth', '0.4 mg chewed', 'Into the airway'], correct: 0, explain: 'Intranasal naloxone (commonly 2-4 mg; 4 mg nasal spray). Ventilate first - it takes a few minutes to work.', skill: 'medDose', then: () => {
         s.flags.nalT = s.t; if (!s.flags.bvm) api.log('Tip: ventilate first - naloxone takes 2-5 min and he\'s hypoxic NOW.', 'warn'); api.good('Naloxone given. Keep bagging while it works.'); } });
     },
   },
@@ -338,7 +338,7 @@ export const SCENARIOS = [
 },
 // 4 ------------------------------------------------------------------
 {
-  id: 'arrest', cat: 'Cardiac', title: 'Adult cardiac arrest (AED)', age: 'adult',
+  id: 'arrest', tags: ['pulseCheck','cpr','aed'], cat: 'Cardiac', title: 'Adult cardiac arrest (AED)', age: 'adult',
   dispatch: '58 y/o male collapsed at a gym. Bystanders on scene.',
   setup: s => {
     Object.assign(s.v, { hr: 0, sbp: 0, dbp: 0, rr: 0, spo2: 0, etco2: 4, avpu: 'U' });
@@ -366,7 +366,7 @@ export const SCENARIOS = [
         f.analyzing = false;
         if (s.rhythm === 'VF') {
           s.say('AED', 'Shock advised. Stand clear. Shock delivered.'); f.shocks = (f.shocks || 0) + 1; f.postCpr = 0;
-          api.prompt({ q: 'Shock delivered. What do you do RIGHT NOW?', options: ['Resume CPR immediately, starting with compressions', 'Check for a pulse', 'Re-analyze right away', 'Give 2 rescue breaths first'], correct: 0, explain: 'After a shock: straight back to compressions for 2 minutes. Pulse/rhythm checks come at the next analysis. Keep pauses under 10 s.', then: ok => {
+          api.prompt({ q: 'Shock delivered. What do you do RIGHT NOW?', options: ['Resume CPR immediately, starting with compressions', 'Check for a pulse', 'Re-analyze right away', 'Give 2 rescue breaths first'], correct: 0, explain: 'After a shock: straight back to compressions for 2 minutes. Pulse/rhythm checks come at the next analysis. Keep pauses under 10 s.', skill: 'cpr', then: ok => {
             f.shockOK = ok; if (!ok) api.bad('postShock', 'Your partner restarts compressions.', 'Resume CPR immediately after the shock - no pulse check first.', true);
             if (!f.cprQ) GENERIC_CPR_PROMPT(s, api); else s.cpr = true;
           } });
@@ -418,7 +418,7 @@ export const SCENARIOS = [
 },
 // 5 ------------------------------------------------------------------
 {
-  id: 'infant', cat: 'Cardiac', title: 'Infant arrest (2 rescuers)', age: 'infant',
+  id: 'infant', tags: ['pulseCheck','cpr'], cat: 'Cardiac', title: 'Infant arrest (2 rescuers)', age: 'infant',
   dispatch: '6-month-old, not breathing. Parent on scene. You and your partner respond.',
   setup: s => {
     Object.assign(s.v, { hr: 48, sbp: 50, dbp: 30, rr: 0, spo2: 62, etco2: 10, avpu: 'U' });
@@ -449,7 +449,7 @@ export const SCENARIOS = [
     if (f.goodT > 20) {
       f.rosc = true; s.reveal.hr = true; f.cprIndicated = false;
       api.say('Partner', 'Pulse check: brachial 130! Still not breathing though.');
-      api.prompt({ q: 'Infant has a pulse of 130 but is NOT breathing. Rescue breathing rate?', options: ['1 breath every 2-3 s (20-30/min)', '1 breath every 6 s', '15:2 with compressions', '1 breath every 10 s'], correct: 0, explain: 'Infants/children with a pulse: 1 breath every 2-3 s. Re-check pulse about every 2 min.', then: ok => { f.rescueOK = true; f.rescueRight = ok; if (!ok) api.bad('rescueRate', 'Partner corrects the rate.', 'Infant rescue breathing: 1 breath every 2-3 s.'); } });
+      api.prompt({ q: 'Infant has a pulse of 130 but is NOT breathing. Rescue breathing rate?', options: ['1 breath every 2-3 s (20-30/min)', '1 breath every 6 s', '15:2 with compressions', '1 breath every 10 s'], correct: 0, explain: 'Infants/children with a pulse: 1 breath every 2-3 s. Re-check pulse about every 2 min.', skill: 'ventRate', then: ok => { f.rescueOK = true; f.rescueRight = ok; if (!ok) api.bad('rescueRate', 'Partner corrects the rate.', 'Infant rescue breathing: 1 breath every 2-3 s.'); } });
     }
     if (s.t > 150 && !s.cpr) api.end('fail', 'Without CPR her heart slowed to a stop. HR under 60 with poor perfusion in an infant = start CPR.');
   },
@@ -457,7 +457,7 @@ export const SCENARIOS = [
     cpr: (s, api) => {
       if (s.flags.rosc) return api.bad('cprROSC', 'She has a good pulse now - no compressions.', 'Pulse 60+ = rescue breaths only.', true);
       if (s.cpr) return api.info('CPR going. Switch roles every 2 min.');
-      api.prompt({ q: 'Two-rescuer infant CPR. Which combo?', options: ['30:2, about 1.5 in, 100-120/min', '15:2, about 1.5 in (1/3 chest), 100-120/min, 2-thumb encircling', '15:2, 2-2.4 in, 100-120/min', '5:1, about 0.5 in'], correct: 1, explain: 'Two rescuers on an infant: 15:2, 1/3 of chest depth (about 1.5 in / 4 cm), 100-120/min, 2-thumb encircling hands.', then: ok => { s.flags.cprQ = ok ? 'good' : 'poor'; s.cpr = true; if (!ok) api.bad('cprCombo', 'Partner coaches you to 15:2 at 1/3 chest depth.', 'Infant 2-rescuer: 15:2, about 1.5 in (4 cm).'); else api.good('Compressions started: 15:2.'); } });
+      api.prompt({ q: 'Two-rescuer infant CPR. Which combo?', options: ['30:2, about 1.5 in, 100-120/min', '15:2, about 1.5 in (1/3 chest), 100-120/min, 2-thumb encircling', '15:2, 2-2.4 in, 100-120/min', '5:1, about 0.5 in'], correct: 1, explain: 'Two rescuers on an infant: 15:2, 1/3 of chest depth (about 1.5 in / 4 cm), 100-120/min, 2-thumb encircling hands.', skill: 'cpr', then: ok => { s.flags.cprQ = ok ? 'good' : 'poor'; s.cpr = true; if (!ok) api.bad('cprCombo', 'Partner coaches you to 15:2 at 1/3 chest depth.', 'Infant 2-rescuer: 15:2, about 1.5 in (4 cm).'); else api.good('Compressions started: 15:2.'); } });
     },
     aed: (s, api) => { s.devices.add('aed'); s.flags.aed = true; s.say('AED', 'Pediatric pads on. Analyzing... No shock advised. Continue CPR.'); api.info('Infant arrests are usually from breathing problems - good CPR + ventilation is the fix.'); },
     posSit: (s, api) => api.info('Keep her flat on a firm surface for CPR.'),
@@ -475,7 +475,7 @@ export const SCENARIOS = [
 },
 // 6 ------------------------------------------------------------------
 {
-  id: 'acs', cat: 'Cardiac', title: 'Chest pain (ACS)', age: 'adult',
+  id: 'acs', tags: ['medHx','allergy','bpNitro','spo2'], cat: 'Cardiac', title: 'Chest pain (ACS)', age: 'adult',
   dispatch: '61 y/o male, chest pain. Office building.',
   setup: s => {
     s.variant = Math.random() < 0.55 ? 'pde5' : 'ok';
@@ -502,7 +502,7 @@ export const SCENARIOS = [
     asa: (s, api) => {
       if (s.flags.asa) return api.info('Aspirin already given.');
       if (!s.flags.sample) api.bad('asaAllergy', 'Gave aspirin without asking allergies.', 'Get SAMPLE (allergies, GI bleed) before aspirin.');
-      api.prompt({ q: 'Aspirin dose for suspected ACS?', options: ['81 mg swallowed whole', '162-324 mg chewed', '650 mg', '1,000 mg chewed'], correct: 1, explain: '162-324 mg (2-4 baby aspirin), chewed for faster absorption.', then: ok => { s.flags.asa = true; s.flags.asaOK = ok; api.good('Aspirin chewed.'); } });
+      api.prompt({ q: 'Aspirin dose for suspected ACS?', options: ['81 mg swallowed whole', '162-324 mg chewed', '650 mg', '1,000 mg chewed'], correct: 1, explain: '162-324 mg (2-4 baby aspirin), chewed for faster absorption.', skill: 'medDose', then: ok => { s.flags.asa = true; s.flags.asaOK = ok; api.good('Aspirin chewed.'); } });
     },
     ntg: (s, api) => {
       const f = s.flags;
@@ -530,7 +530,7 @@ export const SCENARIOS = [
 },
 // 7 ------------------------------------------------------------------
 {
-  id: 'anaph', cat: 'Medical', title: 'Anaphylaxis (bee sting)', age: 'adult',
+  id: 'anaph', tags: ['epi','lungs','spo2'], cat: 'Medical', title: 'Anaphylaxis (bee sting)', age: 'adult',
   dispatch: '19 y/o female, allergic reaction at a park.',
   setup: s => {
     Object.assign(s.v, { hr: 128, sbp: 82, dbp: 48, rr: 28, spo2: 90, etco2: 34, avpu: 'A', bgl: 100 });
@@ -557,7 +557,7 @@ export const SCENARIOS = [
   actions: {
     epi: (s, api) => {
       if (s.flags.epiT != null) return api.info(s.t - s.flags.epiT < 300 ? 'Repeat epi is usually 5-15 min later, per medical control, if no improvement.' : 'Second dose given per medical control.');
-      api.prompt({ q: 'Assisting with her EpiPen. How?', options: ['Outer thigh, IM (through clothes OK), hold 3 s', 'Into a vein in the arm', 'Center of the buttock', 'Under the tongue'], correct: 0, explain: 'Adult auto-injector 0.3 mg (child 0.15 mg) into the lateral thigh, hold per device (about 3 s), then massage.', then: ok => { s.flags.epiT = s.t; s.flags.epiOK = ok; api.good('Epinephrine in. Watch for improvement in 1-2 min; reassess vitals.'); } });
+      api.prompt({ q: 'Assisting with her EpiPen. How?', options: ['Outer thigh, IM (through clothes OK), hold 3 s', 'Into a vein in the arm', 'Center of the buttock', 'Under the tongue'], correct: 0, explain: 'Adult auto-injector 0.3 mg (child 0.15 mg) into the lateral thigh, hold per device (about 3 s), then massage.', skill: 'epi', then: ok => { s.flags.epiT = s.t; s.flags.epiOK = ok; api.good('Epinephrine in. Watch for improvement in 1-2 min; reassess vitals.'); } });
     },
     albuterol: (s, api) => api.info('She has no prescribed inhaler; EMTs only assist with the patient\'s own. Epi treats the wheezing too.'),
     posSupine: (s, api) => { s.pose = 'supine'; s.flags.supine = true; api.info('OK for low BP - but if breathing is hard, many prefer sitting. Either is acceptable.'); },
@@ -573,7 +573,7 @@ export const SCENARIOS = [
 },
 // 8 ------------------------------------------------------------------
 {
-  id: 'bleed', cat: 'Trauma', title: 'Trauma: severe leg bleed + shock', age: 'adult',
+  id: 'bleed', tags: ['bleedFirst','spo2'], cat: 'Trauma', title: 'Trauma: severe leg bleed + shock', age: 'adult',
   dispatch: '34 y/o male, leg laceration from a saw. Construction site.',
   setup: s => {
     Object.assign(s.v, { hr: 124, sbp: 100, dbp: 68, rr: 24, spo2: 96, etco2: 32, avpu: 'A', bgl: 110 });
@@ -601,7 +601,7 @@ export const SCENARIOS = [
   actions: {
     tourniquet: (s, api) => {
       if (s.flags.tq) return api.info('Tourniquet on and holding. Time is written down.');
-      api.prompt({ q: 'Where does the tourniquet go?', options: ['2-3 in above the wound (not on a joint), tighten until bleeding stops, note the time', 'Directly on the wound', 'Below the wound', 'Over the knee joint'], correct: 0, explain: 'High and tight: 2-3 inches above the wound, never over a joint, tighten until bleeding stops and distal pulse is gone, write the time.', then: ok => { s.flags.tq = true; s.flags.tqT = s.t; s.flags.tqOK = ok; s.devices.add('tq'); if (!ok) api.bad('tqPlace', 'Repositioned 2-3 in above the wound.', 'Tourniquet goes proximal, 2-3 in above the wound, not over a joint.'); else api.good('Bleeding STOPPED. Time noted.'); } });
+      api.prompt({ q: 'Where does the tourniquet go?', options: ['2-3 in above the wound (not on a joint), tighten until bleeding stops, note the time', 'Directly on the wound', 'Below the wound', 'Over the knee joint'], correct: 0, explain: 'High and tight: 2-3 inches above the wound, never over a joint, tighten until bleeding stops and distal pulse is gone, write the time.', skill: 'bleedFirst', then: ok => { s.flags.tq = true; s.flags.tqT = s.t; s.flags.tqOK = ok; s.devices.add('tq'); if (!ok) api.bad('tqPlace', 'Repositioned 2-3 in above the wound.', 'Tourniquet goes proximal, 2-3 in above the wound, not over a joint.'); else api.good('Bleeding STOPPED. Time noted.'); } });
     },
     dressing: (s, api) => { s.flags.dressing = true; s.devices.add('dressing'); api.info(s.flags.tq ? 'Wound dressed. Good.' : 'Direct pressure slows it, but spurting arterial blood soaks through. This needs a tourniquet.'); },
     collar: (s, api) => { s.devices.add('collar'); api.bad('collarDelay', 'Collar wasn\'t needed - he wasn\'t hit in the head or neck, and it cost time.', 'No spinal mechanism here; in uncontrolled bleeding, don\'t delay hemorrhage control.'); },
@@ -622,6 +622,6 @@ export const SCENARIOS = [
 
 // shared adult CPR prompt (used by arrest scenario)
 export function GENERIC_CPR_PROMPT(s, api) {
-  api.prompt({ q: 'Adult CPR, you\'re on compressions. Which combo?', options: ['30:2, 2-2.4 in deep, 100-120/min, full recoil', '15:2, about 1.5 in, 100-120/min', '30:2, about 1 in, 80/min', '15:2, 2-2.4 in, 140/min'], correct: 0, explain: 'Adult: 30:2, at least 2 in but not more than 2.4 in, 100-120/min, let the chest fully recoil, pauses under 10 s.', then: ok => {
+  api.prompt({ q: 'Adult CPR, you\'re on compressions. Which combo?', options: ['30:2, 2-2.4 in deep, 100-120/min, full recoil', '15:2, about 1.5 in, 100-120/min', '30:2, about 1 in, 80/min', '15:2, 2-2.4 in, 140/min'], correct: 0, explain: 'Adult: 30:2, at least 2 in but not more than 2.4 in, 100-120/min, let the chest fully recoil, pauses under 10 s.', skill: 'cpr', then: ok => {
     s.flags.cprQ = ok ? 'good' : 'poor'; s.cpr = true; if (!ok) api.bad('cprCombo', 'Partner coaches you: 30:2, 2-2.4 in, 100-120/min.', 'Adult CPR: 30:2, 2-2.4 in, 100-120/min.'); else api.good('High-quality compressions going.'); } });
 }

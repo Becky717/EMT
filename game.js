@@ -5,13 +5,14 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { GEO, mergeKit, kitGroup, buildEquip, buildO2Tank, hose, EQUIP, EQUIP_LABEL } from './models.js';
 import { SCENARIOS, ACTIONS, TABS, GENERIC, isTreatment, clamp } from './rules.js';
+import { recordRound, makeCase, makeTemplate, TEMPLATE_IDS, pickSkill, topSkills, skillLabel, resetSkills, skillData } from './adaptive.js';
 
 const TIME_LIMIT = 300;
 const SKIN = { normal: 0xd9a27e, pale: 0xe6d3c4, cyanotic: 0x8f9bbd, flushed: 0xe0776a, mottled: 0xb9a4a8 };
 const TONE = { info: '#e8eef7', good: '#5ee08a', bad: '#ff7b7b', warn: '#ffc857', say: '#7fd6ff', head: '#ffc857' };
 
 // ======================= GAME STATE =======================
-let mode = 'menu', S = null, scnIndex = 0, tab = 0, page = 0, seated = false, flash = null;
+let mode = 'menu', S = null, scnIndex = 0, tab = 0, page = 0, seated = false, flash = null, adScn = null, resetArm = false;
 const best = JSON.parse(localStorage.getItem('emtvr_best') || '{}');
 
 function newState(scn) {
@@ -32,13 +33,18 @@ function makeApi(s) {
     info: t => { addLog(s, t, 'info'); },
     good: t => { addLog(s, '✓ ' + t, 'good'); doFlash('good'); },
     bad: (key, t, why, severe) => { addLog(s, '✗ ' + t + ' ' + why, 'bad'); doFlash('bad');
-      if (!s.flags.mistakeKeys.has(key)) { s.flags.mistakeKeys.add(key); s.mistakes.push({ t, why, severe }); } },
+      if (!s.flags.mistakeKeys.has(key)) { s.flags.mistakeKeys.add(key); s.mistakes.push({ key, t, why, severe }); } },
     prompt: p => { if (s.prompt) s.promptQ.push(p); else s.prompt = p; },
     end: (o, msg) => endScenario(s, o, msg),
   };
 }
 function startScenario(i) {
-  scnIndex = (i + SCENARIOS.length) % SCENARIOS.length; S = newState(SCENARIOS[scnIndex]); mode = 'play'; tab = 0; page = 0;
+  scnIndex = (i + SCENARIOS.length) % SCENARIOS.length; adScn = null; S = newState(SCENARIOS[scnIndex]); mode = 'play'; tab = 0; page = 0;
+  rebuildPatientLook(); refreshAll();
+}
+// adaptive "weak spot" case (generated in adaptive.js)
+function startCase(scn) {
+  adScn = scn || makeCase(); S = newState(adScn); mode = 'play'; tab = 0; page = 0;
   rebuildPatientLook(); refreshAll();
 }
 function doAction(id) {
@@ -47,6 +53,7 @@ function doAction(id) {
   const s = S, api = makeApi(s);
   if (s.flags.sceneFirst === undefined) { s.flags.sceneFirst = id === 'scene'; s.flags.firstT = s.t; if (id !== 'scene') api.bad('sceneFirst', 'Started before scene safety/BSI.', 'Always confirm scene safety and gloves first.'); }
   addLog(s, '▶ ' + ACTIONS[id].label, 'head');
+  const fl = s.flags; (fl.at ||= {}); if (fl.at[id] == null) fl.at[id] = s.t; (fl.seq ||= []).push([id, s.t]);
   (s.scn.actions?.[id] || GENERIC[id])(s, api);
   beep(isTreatment(id) ? 660 : 520, 0.05);
   refreshAll();
@@ -59,6 +66,7 @@ function answerPrompt(i) {
     s.qTotal++; if (ok) s.qRight++;
     addLog(s, ok ? `✓ Correct! ${p.explain}` : `✗ Answer: ${p.options[p.correct]}. ${p.explain}`, ok ? 'good' : 'bad');
     doFlash(ok ? 'good' : 'bad'); beep(ok ? 880 : 220, 0.15);
+    if (p.skill) (s.flags.qRes ||= []).push({ skill: p.skill, ok, q: p.q });
   }
   p.then && p.then(ok, i);
   if (!s.prompt && s.promptQ.length) s.prompt = s.promptQ.shift();
@@ -84,6 +92,14 @@ function endScenario(s, outcome, msg) {
   const L = [{ text: head, tone: 'head' }];
   if (msg) L.push({ text: msg, tone: 'warn' });
   L.push({ text: `Score ${score}/100  •  Critical actions ${okN}/${crit.length}  •  Questions ${s.qRight}/${s.qTotal}  •  ${fmt(s.t)}`, tone: 'info' });
+  // adaptive coach: what she missed, why it matters, what's next
+  let rep = null; try { rep = recordRound(s); } catch (e) { console.warn('adaptive', e); }
+  if (rep) {
+    if (rep.tested) L.push({ text: rep.tested.ok ? `🎯 Trap beaten: ${rep.tested.label} ✓` : `🎯 Trap: ${rep.tested.trap}`, tone: rep.tested.ok ? 'good' : 'bad' });
+    if (rep.misses.length) { L.push({ text: 'MISSED (and why it matters)', tone: 'bad' }); rep.misses.slice(0, 4).forEach(m => L.push({ text: `✗ ${m.label}: ${m.why}`, tone: 'info' })); }
+    L.push({ text: `➡ Next case will test: ${skillLabel(rep.next)}`, tone: 'warn' });
+  }
+  s.adNext = rep && rep.next;
   const did = crit.filter(c => c.ok), miss = crit.filter(c => !c.ok);
   if (did.length) { L.push({ text: 'WHAT YOU NAILED', tone: 'good' }); did.forEach(c => L.push({ text: '✓ ' + c.label, tone: 'good' })); }
   if (miss.length) { L.push({ text: 'NEXT TIME', tone: 'warn' }); miss.forEach(c => L.push({ text: '• ' + c.label + ' - ' + c.why, tone: 'info' })); }
@@ -99,14 +115,25 @@ function doFlash(kind) { flash = { kind, until: performance.now() + 1200 }; }
 function model() {
   if (mode === 'menu') return {
     title: 'EMT Sim VR', right: '', align: 'top',
-    lines: [{ text: 'Pick a patient. Each run is 3-5 min. Treat them like a real call: scene safety first, then assess, treat, transport.', tone: 'info' },
-            { text: 'VR: point the laser, pull the trigger. Left panel = main. Right panel = assess/move. The cart tray holds your equipment and meds: point at the item itself.', tone: 'say' }],
+    lines: [{ text: 'Pick a patient. 3-5 min each. Scene safety first, then assess, treat, transport.', tone: 'info' },
+            { text: `🎯 Weak spots: a new case built from your misses. Next: ${skillLabel(pickSkill())}`, tone: 'warn' },
+            { text: 'VR: laser + trigger. Gear and meds are on the red cart.', tone: 'say' }],
     cols: 2, buttons: [...SCENARIOS.map((sc, i) => ({ id: 'scn:' + i, label: sc.title + (best[sc.id] != null ? `  ★${best[sc.id]}` : '') })),
-      { id: 'random', label: '🎲 Random patient', primary: true }, { id: 'seat', label: seated ? 'Seated mode: ON' : 'Seated mode: OFF' }] };
+      { id: 'adaptive', label: '🎯 Weak spots (adaptive)', primary: true }, { id: 'progress', label: '📊 My weak spots' },
+      { id: 'random', label: '🎲 Random patient' }, { id: 'seat', label: seated ? 'Seated mode: ON' : 'Seated mode: OFF' }] };
+  if (mode === 'progress') {
+    const top = topSkills(6), d = skillData(), days = Math.ceil((new Date(2026, 11, 12) - new Date()) / 864e5);
+    const L = [{ text: `Rounds played: ${d.rounds}${days > 0 ? `  •  NREMT in ${days} days` : ''}`, tone: 'info' }];
+    if (!top.length) L.push({ text: 'No weak spots right now. Nice! Play a few cases.', tone: 'good' });
+    top.forEach(t => { const n = Math.max(1, Math.min(5, Math.round(t.w / 2))); L.push({ text: `${'■'.repeat(n)}${'□'.repeat(5 - n)}  ${t.label}  (missed ${t.miss}, right ${t.hit})`, tone: t.w >= 4 ? 'bad' : 'warn' }); });
+    L.push({ text: 'Miss = bar goes up. Get it right = bar shrinks.', tone: 'say' });
+    return { title: 'My weak spots', right: '', align: 'top', lines: L, cols: 3,
+      buttons: [{ id: 'adaptive', label: '🎯 Practice top spot', primary: true }, { id: 'reset', label: resetArm ? 'Tap again to reset' : 'Reset progress' }, { id: 'menu', label: 'Menu' }] };
+  }
   if (mode === 'debrief') {
     return { title: 'Debrief: ' + S.scn.title, right: '', align: 'top', paged: true, lines: S.debrief, cols: 3,
-      buttons: [{ id: 'replay', label: '↻ Play again', primary: true }, { id: 'next', label: 'Next patient ▸' }, { id: 'menu', label: 'Menu' },
-        { id: 'pgPrev', label: '◂ Prev page' }, { id: 'pgNext', label: 'More ▸' }] };
+      buttons: [{ id: 'adaptive', label: '🎯 Weak-spot case', primary: true }, { id: 'replay', label: '↻ Play again' }, { id: 'next', label: adScn ? 'Menu' : 'Next patient ▸' },
+        { id: 'progress', label: '📊 Weak spots' }, { id: 'pgPrev', label: '◂ Prev page' }, { id: 'pgNext', label: 'More ▸' }] };
   }
   const s = S;
   const m = { title: s.scn.title, right: `${fmt(s.t)} / 5:00`, align: 'bottom', lines: s.log.slice(-14), cols: 1, buttons: [] };
@@ -122,10 +149,13 @@ function onButton(id) {
   if (id.startsWith('act:')) return doAction(id.slice(4));
   switch (id) {
     case 'random': return startScenario(Math.floor(Math.random() * SCENARIOS.length));
+    case 'adaptive': resetArm = false; return startCase(makeCase(S && S.adNext !== undefined && mode === 'debrief' ? S.adNext : undefined));
+    case 'progress': resetArm = false; mode = 'progress'; S = null; page = 0; rebuildPatientLook(); return refreshAll();
+    case 'reset': if (resetArm) { resetSkills(); resetArm = false; } else resetArm = true; return refreshAll();
     case 'seat': seated = !seated; world.position.y = seated ? -0.45 : 0; return refreshAll();
-    case 'menu': mode = 'menu'; S = null; rebuildPatientLook(); return refreshAll();
-    case 'replay': return startScenario(scnIndex);
-    case 'next': return startScenario(scnIndex + 1);
+    case 'menu': resetArm = false; mode = 'menu'; S = null; rebuildPatientLook(); return refreshAll();
+    case 'replay': return adScn ? startCase(adScn) : startScenario(scnIndex);
+    case 'next': if (adScn) { mode = 'menu'; S = null; adScn = null; rebuildPatientLook(); return refreshAll(); } return startScenario(scnIndex + 1);
     case 'pgPrev': page = Math.max(0, page - 1); return refreshAll();
     case 'pgNext': page++; return refreshAll();
   }
@@ -399,31 +429,31 @@ function rebuildPatientLook() {
   const s = S;
   P.root.visible = !!s; P.blanket.visible = false; P.blood.visible = false; P.hands.visible = false; P.aedUnit.visible = false; P.shadow.visible = !!s;
   if (!s) return;
-  const inf = s.age === 'infant', fem = s.sex === 'f';
+  const inf = s.age === 'infant', kid = s.age === 'child', fem = s.sex === 'f';
   P.mShirt.color.setHex(s.shirt);
   P.mPants.color.setHex(inf ? 0xf8f4ef : fem ? 0x264653 : 0x2b2d42);
   P.mShoe.color.setHex(inf ? 0xf3f0ea : 0x26262b);
   P.mHair.color.setHex(inf ? 0x6b4a2e : fem ? 0x4a2f1d : 0x2a2018);
-  P.root.scale.setScalar(inf ? 0.34 : 1);
-  P.head.scale.setScalar(inf ? 1.5 : 1); P.head.position.y = inf ? 0.74 : 0.785;
+  P.root.scale.setScalar(inf ? 0.34 : kid ? 0.62 : 1);
+  P.head.scale.setScalar(inf ? 1.5 : kid ? 1.2 : 1); P.head.position.y = inf ? 0.74 : kid ? 0.77 : 0.785;
   P.arms.forEach(a => a.sh.scale.set(inf ? 1.15 : 1, inf ? 0.75 : 1, inf ? 1.15 : 1));
   P.legs.forEach(l => l.hp.scale.set(inf ? 1.2 : 1, inf ? 0.72 : 1, inf ? 1.2 : 1));
-  P.bust.visible = fem && !inf; P.belt.visible = !inf; P.hairLong.visible = fem && !inf; P.hair.scale.setScalar(inf ? 0.985 : 1);
+  P.bust.visible = fem && !inf && !kid; P.belt.visible = !inf; P.hairLong.visible = fem && !inf; P.hair.scale.setScalar(inf ? 0.985 : 1);
   P.wound.visible = s.bleed > 0;
-  P.hands.scale.setScalar(inf ? 0.45 : 1);
+  P.hands.scale.setScalar(inf ? 0.45 : kid ? 0.75 : 1);
   P.skinTex.mottled = null; P.mSkin.color.setHex(SKIN[s.skin] || SKIN.normal);
   P.lastPose = null; P.blink = 0;
 }
 function applyPose() {
   const s = S; if (P.lastPose === s.pose) return; P.lastPose = s.pose;
-  const inf = s.age === 'infant';
+  const inf = s.age === 'infant', kid = s.age === 'child';
   if (s.pose === 'supine') {
     P.body.rotation.set(-Math.PI / 2, 0, 0); P.root.rotation.set(0, Math.PI / 2, 0); // head toward -x, patient's right side toward you
-    P.root.position.set(inf ? -0.15 : 0.06, MT + (inf ? 0.04 : 0.112), -1.3); setJoints(0, inf ? 0 : 0.12, 0, 0, 0, 0);
-    P.shadow.scale.set(inf ? 0.6 : 2, 1, inf ? 0.5 : 1); P.shadow.position.set(inf ? -0.25 : 0.1, MT + 0.003, -1.3);
+    P.root.position.set(inf ? -0.15 : kid ? -0.24 : 0.06, MT + (inf ? 0.04 : kid ? 0.07 : 0.112), -1.3); setJoints(0, inf ? 0 : 0.12, 0, 0, 0, 0);
+    P.shadow.scale.set(inf ? 0.6 : kid ? 1.25 : 2, 1, inf ? 0.5 : kid ? 0.7 : 1); P.shadow.position.set(inf ? -0.25 : kid ? -0.2 : 0.1, MT + 0.003, -1.3);
   } else {
     P.body.rotation.set(0, 0, 0); P.root.rotation.set(0, -0.35, 0);
-    P.root.position.set(-0.05, MT + 0.085, -1.2);
+    P.root.position.set(-0.05, MT + (kid ? 0.055 : 0.085), -1.2);
     if (s.pose === 'tripod') setJoints(0.5, -0.45, -1.0, -0.35, -Math.PI / 2, Math.PI / 2);
     else setJoints(-0.08, 0.05, -0.3, -1.0, -Math.PI / 2, Math.PI / 2);
     P.shadow.scale.set(0.7, 1, 0.9); P.shadow.position.set(-0.1, MT + 0.003, -1.12);
@@ -744,4 +774,4 @@ renderer.setAnimationLoop(now => {
   renderer.render(scene, camera);
 });
 rebuildPatientLook(); refreshAll();
-window.__emt = { P, start: startScenario, act: doAction, answer: answerPrompt, state: () => S, tick, mode: () => mode, onButton, camera, renderer, scene, trayItems, hover: setHover };
+window.__emt = { P, start: startScenario, startCase, makeCase, makeTemplate, TEMPLATE_IDS, pickSkill, skills: skillData, topSkills, act: doAction, answer: answerPrompt, state: () => S, tick, mode: () => mode, onButton, camera, renderer, scene, trayItems, hover: setHover };
