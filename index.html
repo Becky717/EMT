@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>EMT Sim VR</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%9A%91%3C/text%3E%3C/svg%3E">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#111827;font-family:system-ui,sans-serif;color:#e8eef7}
+  #view{position:fixed;inset:0}
+  #ui{position:fixed;top:0;right:0;width:420px;max-width:100%;height:100%;overflow:auto;background:rgba(16,24,40,.92);padding:14px 16px 90px;box-sizing:border-box;z-index:5}
+  #ui h1{font-size:20px;margin:0 0 6px;color:#fff}
+  #d-vitals{white-space:pre-wrap;font:600 15px ui-monospace,monospace;color:#7fd6ff;margin:6px 0}
+  #d-lines{font-size:15px;line-height:1.35;max-height:42vh;overflow:auto;margin-bottom:8px}
+  #d-lines div{margin:3px 0}
+  #d-q{font-weight:700;color:#ffc857;font-size:17px;margin:8px 0}
+  #ui button{font:600 15px system-ui;color:#fff;background:#33415c;border:0;border-radius:10px;padding:11px 10px;margin:3px 0;cursor:pointer;width:100%;text-align:left}
+  #ui button.pri{background:#2f9e6a}#ui button.sel{background:#2b6cb0}
+  #d-tabs{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}#d-tabs button{width:auto;flex:1 1 auto;text-align:center;font-size:13px}
+  #d-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px}#d-actions button{margin:0}
+  #hint{font-size:13px;color:#9fb0c8;margin-bottom:8px}
+  #d-toggle{position:fixed;top:10px;left:10px;z-index:6;font:600 14px system-ui;background:#33415c;color:#fff;border:0;border-radius:8px;padding:8px 12px}
+  body.hideui #ui{display:none}
+  body.inxr #ui, body.inxr #d-toggle{display:none}
+  #VRButton{z-index:20!important;left:16px!important;bottom:16px!important;width:auto!important;padding:16px 24px!important;font:700 20px system-ui!important;background:rgba(47,158,106,.95)!important;border-radius:12px!important;opacity:1!important}
+  @media (max-width:820px){#ui{top:auto;bottom:0;width:100%;height:56%;padding-bottom:80px}#d-lines{max-height:none}}
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div id="view"></div>
+<button id="d-toggle">Show/hide panel</button>
+<div id="ui">
+  <h1 id="d-title">EMT Sim VR</h1>
+  <div id="hint">On Quest: tap <b>ENTER VR</b> (bottom-left). Phone/computer: play right here.</div>
+  <div id="d-vitals"></div>
+  <div id="d-lines"></div>
+  <div id="d-q"></div>
+  <div id="d-buttons"></div>
+  <div id="d-actions-wrap"><div id="d-tabs"></div><div id="d-actions"></div></div>
+</div>
+<noscript>This game needs JavaScript.</noscript>
+<script type="module" src="./game.js"></script>
+</body>
+</html>
