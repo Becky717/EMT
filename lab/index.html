@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Bottega di Ingegneria · Renaissance Engineering Lab</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%E2%9A%99%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#2a1b0e;color:#f1e3c0;font-family:"IM Fell English",Georgia,serif;touch-action:none;-webkit-user-select:none;user-select:none}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,#4a3018,#1c1209)}
+  #stage{display:flex;box-shadow:0 10px 40px rgba(0,0,0,.6);border:6px solid #6b4423;border-radius:6px}
+  #stage canvas{display:block}
+  #bar{position:fixed;left:10px;bottom:10px;display:flex;gap:8px;z-index:5}
+  #bar button{font:700 16px "IM Fell English",Georgia,serif;color:#fbf1d6;background:#4f6b2e;border:2px solid #d4a017;border-radius:10px;padding:7px 12px;cursor:pointer;opacity:.92}
+  #bar button.alt{background:#7a5530}
+  #bar button[hidden]{display:none}
+  #view3d{position:fixed;inset:0;display:none;z-index:4}
+  body.in3d #view3d{display:block} body.in3d #wrap{visibility:hidden}
+  #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px;z-index:9;background:#2a1b0e}
+  #rotate{display:none;position:fixed;top:6px;left:50%;transform:translateX(-50%);font-size:15px;background:rgba(0,0,0,.5);padding:4px 10px;border-radius:8px;z-index:6}
+  @media (orientation:portrait){#rotate{display:block}}
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div id="loading">Opening the workshop…</div>
+<div id="wrap"><div id="stage"><canvas id="board" width="1168" height="1000"></canvas><canvas id="panel" width="432" height="1000"></canvas></div></div>
+<div id="view3d"></div>
+<div id="rotate">Turn your phone sideways for a bigger board</div>
+<div id="bar"><button id="btn-vr" hidden>ENTER VR</button><button id="btn-3d" class="alt">3D Workshop</button><button id="btn-2d" class="alt" hidden>Back to 2D</button></div>
+<noscript>This game needs JavaScript.</noscript>
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>

@@ -2,6 +2,8 @@
 
 A WebXR EMT patient-simulation game for Meta Quest 2 (Quest Browser). It also works as a normal web page on a phone or computer.
 
+Renaissance engineering lab: https://becky717.github.io/EMT/lab/
+
 - Open the page in Quest Browser and tap **ENTER VR**. Point the controller laser and pull the trigger to choose.
 - 8 NREMT-level patients: asthma, CHF (CPAP decision), opioid overdose, adult arrest with AED, infant arrest with 2 rescuers, ACS chest pain, anaphylaxis, and a severe bleed with shock. Plus 13 adaptive weak-spot case templates (see below).
 - Equipment and meds sit on a red crash cart as real-looking 3D models (NPA, OPA, BVM, NRB, AED, tourniquet, EpiPen, and more), each with its name underneath. Point at the item (or its label) to use it.
