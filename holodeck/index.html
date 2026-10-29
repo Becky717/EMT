@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Grid Chamber</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%96%8A%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#050508;color:#e8eef7;font-family:system-ui,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none}
+  #view{position:fixed;inset:0}
+  #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#050508;z-index:9;font-size:22px;color:#e8a020}
+  #ui{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:10px 12px 18px;background:linear-gradient(transparent,rgba(5,5,8,.92) 28%);pointer-events:none}
+  #ui *{pointer-events:auto}
+  #hud{position:fixed;top:10px;left:10px;z-index:6;display:flex;gap:8px;align-items:center}
+  #hud-mode{font:700 13px system-ui;letter-spacing:.08em;color:#e8a020;background:rgba(20,24,36,.75);border:1px solid #e8a020;border-radius:8px;padding:6px 10px}
+  #hint{font:500 12px system-ui;color:#9fb0c8;background:rgba(20,24,36,.65);border-radius:8px;padding:6px 10px;max-width:60vw}
+  #computer{max-width:720px;margin:0 auto}
+  #comp-reply{font:600 15px system-ui;min-height:1.3em;margin:0 0 8px;color:#7fd6ff}
+  #comp-reply.no{color:#ff8a7a}
+  #comp-reply.ok{color:#9dffa0}
+  #comp-row{display:flex;gap:6px;margin-bottom:8px}
+  #comp-input{flex:1;font:500 16px system-ui;padding:12px 14px;border-radius:12px;border:1px solid #3a4a60;background:#121820;color:#e8eef7;outline:none}
+  #comp-input:focus{border-color:#e8a020}
+  #comp-go,#comp-mic{font:700 15px system-ui;border:0;border-radius:12px;padding:0 16px;cursor:pointer;color:#fff;background:#2f6b9e}
+  #comp-mic.live{background:#c0392b;animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.7}}
+  #comp-presets{display:flex;flex-wrap:wrap;gap:6px}
+  #comp-presets button{font:600 13px system-ui;color:#e8eef7;background:#1a2838;border:1px solid #3a5068;border-radius:999px;padding:8px 12px;cursor:pointer}
+  #comp-presets button:active{background:#e8a020;color:#111}
+  body.inxr #ui,body.inxr #hud{display:none}
+  #VRButton{z-index:20!important;left:16px!important;bottom:16px!important;width:auto!important;padding:16px 24px!important;font:700 20px system-ui!important;background:rgba(232,160,32,.95)!important;color:#111!important;border-radius:12px!important;opacity:1!important}
+  @media(max-width:600px){#hint{display:none}#comp-presets button{font-size:12px;padding:7px 10px}}
+</style>
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<div id="loading">Opening grid chamber…</div>
+<div id="view"></div>
+<div id="hud"><span id="hud-mode">GRID</span><span id="hint">Quest: ENTER VR · laser + trigger. Desktop: drag look · WASD · type below.</span></div>
+<div id="ui"></div>
+<noscript>This game needs JavaScript.</noscript>
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>
