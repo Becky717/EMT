@@ -3,6 +3,7 @@
 import { Sim, DT } from './sim.js';
 import { PUZZLES } from './puzzles.js';
 import { Tutor, CHAPTERS, TIER_NAMES, SKILLS } from './adaptive.js';
+import { getMathLevel, showFormula, showMathHints, showGivenSheet, showNumberDial, observation, predictPrompt } from './mathlayer.js';
 import { drawWorld, drawIcon, initPatterns, paper, paperTexture, text, X, Y, S, toWorld, BW, BH, INK, INK2, RED, BRASS, BRASS2, WOOD, WOOD2, GOLD, GREEN, FONT, SEPIA } from './render.js';
 export const PW = 432, PH = 1000;
 const fmtNum = (x, step) => { if (x == null || Number.isNaN(x)) return '?'; const d = step >= 1 ? 0 : step >= 0.1 ? 1 : 2; return (+x.toFixed(d)).toString(); };
@@ -17,15 +18,19 @@ export class Game {
     this.drag = null; this.hover = null; this.buttons = { board: [], panel: [] }; this.typing = null;
     this.galleryPage = 0; this.galleryOpen = null; this.dirty = true; this.audio = null; this.onEvent = o.onEvent || (() => { });
     this.sim = null;
+    this.mathLevel = getMathLevel();
+    this.predictChoice = null;
+    this.ghost = null; // ghost outline for visual hints
   }
   // ---------- puzzle lifecycle ----------
   loadPuzzle(id, o = {}) {
     const P = PUZZLES.find(p => p.id === id); if (!P) return;
     this.P = P; this.v = o.variant || this.tutor.variant(id, o.tier);
     const q = this.v.q;
-    this.answer = q.kind === 'number' || q.kind === 'angle' ? (o.answer ?? this.defaultAnswer(q)) : (o.answer ?? null);
+    this.answer = (q.kind === 'angle') ? (o.answer ?? this.defaultAnswer(q)) : (o.answer ?? null);
     this.placed = new Set(); this.hintLevel = 0; this.hintsUsed = 0; this.result = null; this.adapt = null; this.diag = null;
     this.t0 = performance.now(); this.running = false; this.screen = 'puzzle';
+    this.predictChoice = null; this.ghost = null; this.observeLine = null;
     const st = this.tutor.p(id);
     this.overlay = st.seen <= 1 || o.concept ? 'concept' : null;
     this.typing = null; this.rebuild(); this.dirty = true; this.tutor.s.lastId = id; this.tutor.save();
@@ -38,10 +43,20 @@ export class Game {
     this.running = false; this.dirty = true;
   }
   ready() {
-    const req = this.P.bin(this.v).filter(b => b.req);
+    const bin = this.P.bin(this.v);
+    const req = bin.filter(b => b.req);
     for (const b of req) if (!this.placed.has(b.key)) return `Drag the ${b.label} from the parts bin first.`;
+    const groups = [...new Set(bin.filter(b => b.group).map(b => b.group))];
+    for (const g of groups) {
+      if (!bin.some(b => b.group === g && this.placed.has(b.key))) {
+        const sample = bin.find(b => b.group === g);
+        return `Pick a ${sample?.label?.split(' ')[0] || 'part'} from the parts bin and drop it on the glowing spot.`;
+      }
+    }
     if (this.v.q.kind === 'gear' && !this.answer) return 'Fit a gear onto the empty axle first.';
-    if (this.answer == null) return 'Set your number first.';
+    if (this.v.q.kind === 'place' && this.answer == null) return 'Slide the part along the glowing rail.';
+    if (this.v.q.kind === 'angle' && this.answer == null) return 'Turn the aim handle first.';
+    if (this.answer == null && this.v.q.kind === 'parts') return 'Pick a part from the bin and drop it on the glowing spot.';
     return null;
   }
   start() {
@@ -55,10 +70,33 @@ export class Game {
   finish(res) {
     this.running = false; this.result = res;
     const a = this.answer;
-    this.diag = res.win ? null : (this.P.diagnose?.(this.v, a) || null);
+    this.diag = res.win ? null : (this.mathLevel >= 4 ? (this.P.diagnose?.(this.v, a) || null) : null);
     this.adapt = this.tutor.record(this.P.id, { win: res.win, ms: this.runMs, tier: this.v.tier, hints: this.hintsUsed, answer: a, diag: this.diag });
-    if (!res.win) this.hintLevel = Math.max(this.hintLevel, Math.min(3, this.tutor.p(this.P.id).failRow));
+    if (res.win && this.mathLevel >= 1) this.observeLine = observation(this.P, this.v, res);
+    if (!res.win) {
+      this.hintLevel = Math.max(this.hintLevel, Math.min(3, this.tutor.p(this.P.id).failRow));
+      if (this.hintLevel >= 2 || this.adapt?.kind === 'worked') this.ghost = this.ghostFor();
+    }
     this.resultAt = this.t + 0.9; this.sfx(res.win ? 'win' : 'fail'); this.onEvent(res.win ? 'win' : 'fail');
+  }
+  ghostFor() {
+    const q = this.v.q, bin = this.P.bin(this.v);
+    if (q.kind === 'place') {
+      const it = bin.find(b => b.rail); if (!it) return null;
+      const pos = it.rail.fromAns(q.ans);
+      return it.rail.axis === 'y' ? { x: it.rail.x, y: pos, r: 0.55 } : { x: pos, y: it.rail.y, r: 0.55 };
+    }
+    if (q.kind === 'gear') {
+      const it = bin.find(b => b.teeth === q.ans); return it?.snap ? { ...it.snap, r: 0.7 } : null;
+    }
+    if (q.kind === 'parts') {
+      const it = bin.find(b => b.value != null && Math.abs(b.value - q.ans) < 1e-9); return it?.snap ? { ...it.snap, r: 0.7 } : null;
+    }
+    if (q.kind === 'angle') {
+      const rot = this.P.rotate?.(this.v); if (!rot) return null;
+      const a = q.ans * Math.PI / 180; return { x: rot.x + rot.len * Math.cos(a), y: rot.y + rot.len * Math.sin(a), r: 0.45 };
+    }
+    return null;
   }
   update(dt) {
     this.t += dt;
@@ -85,11 +123,23 @@ export class Game {
     this.rebuild();
   }
   commitTyping() { if (this.typing != null) { const n = parseFloat(this.typing); this.typing = null; if (!Number.isNaN(n)) this.setAnswer(n); } }
-  hint() { this.hintLevel = Math.min(3, this.hintLevel + 1); this.hintsUsed++; this.dirty = true; this.sfx('tap'); }
+  hint() {
+    this.hintLevel = Math.min(3, this.hintLevel + 1); this.hintsUsed++;
+    if (this.hintLevel >= 2) this.ghost = this.ghostFor();
+    this.dirty = true; this.sfx('tap');
+  }
+  activeHints() {
+    if (showMathHints(this.mathLevel) && this.P.mathHints) return this.P.mathHints(this.v);
+    return this.P.hints(this.v);
+  }
   // ---------- input ----------
   key(k) {
     if (this.screen !== 'puzzle' || this.overlay === 'concept' || this.overlay === 'result') { if (k === 'Enter' || k === ' ') { const b = this.buttons.board.find(x => x.primary) || this.buttons.panel.find(x => x.primary); if (b) b.fn(); } return; }
-    if (this.v.q.kind === 'gear') return;
+    if (this.v.q.kind === 'gear' || this.v.q.kind === 'parts' || !showNumberDial(this.mathLevel)) {
+      if (k === 'Enter') this.start();
+      if (k === 'r' || k === 'R') this.reset(); if (k === 'h' || k === 'H') this.hint();
+      return;
+    }
     if (/^[0-9.]$/.test(k)) { this.typing = (this.typing ?? '') + k; this.dirty = true; return; }
     if (k === '-' && !this.typing) { this.typing = '-'; this.dirty = true; return; }
     if (k === 'Backspace') { if (this.typing != null) { this.typing = this.typing.slice(0, -1); if (!this.typing) this.typing = null; this.dirty = true; } return; }
@@ -132,10 +182,27 @@ export class Game {
     if (it.rail) { const r = it.rail; const pos = r.axis === 'y' ? Math.max(r.y0, Math.min(r.y1, w.y)) : Math.max(r.x0, Math.min(r.x1, w.x)); this.placed.add(it.key); this.setAnswer(r.toAns(pos)); this.sfx('place'); this.onEvent('place'); return; }
     if (it.snap && Math.hypot(w.x - it.snap.x, w.y - it.snap.y) <= it.snap.r) {
       if (it.group) for (const o of this.P.bin(this.v)) if (o.group === it.group) this.placed.delete(o.key);
-      this.placed.add(it.key); if (it.teeth) this.answer = it.teeth; this.rebuild(); this.sfx('place'); this.onEvent('place');
+      this.placed.add(it.key);
+      if (it.teeth != null) this.answer = it.teeth;
+      else if (it.value != null) this.answer = it.value;
+      this.rebuild(); this.sfx('place'); this.onEvent('place');
     } else this.toast('Not there. Drop it on the glowing spot.');
   }
-  placeAll() { for (const it of this.P.bin(this.v)) if (it.req) this.placed.add(it.key); if (this.v.q.kind === 'gear' && this.answer) this.placed.add('g' + this.answer); this.rebuild(); }
+  placeAll() {
+    const bin = this.P.bin(this.v), q = this.v.q;
+    for (const it of bin) if (it.req) this.placed.add(it.key);
+    if (q.kind === 'gear') { this.answer = q.ans; this.placed.add('g' + q.ans); }
+    else if (q.kind === 'parts') {
+      this.answer = q.ans;
+      const it = bin.find(b => b.value != null && Math.abs(b.value - q.ans) < 1e-9);
+      if (it) this.placed.add(it.key);
+    } else if (q.kind === 'place' || q.kind === 'angle') {
+      this.answer = q.ans;
+      const it = bin.find(b => b.rail || b.req);
+      if (it) this.placed.add(it.key);
+    }
+    this.rebuild();
+  }
   // ---------- audio ----------
   ensureAudio() { if (this.audio || typeof AudioContext === 'undefined') return; try { this.audio = new AudioContext(); } catch { this.audio = null; } }
   sfx(kind) {
@@ -188,7 +255,7 @@ export class Game {
     b.fillStyle = 'rgba(236,220,182,0.55)'; b.fillRect(60, 300, BW - 120, 420);
     text(b, 'Bottega di Ingegneria', BW / 2, 400, { size: 76, align: 'center', bold: true, color: INK });
     text(b, 'The Renaissance Engineering Lab', BW / 2, 456, { size: 34, align: 'center', italic: true, color: RED });
-    const steps = ['1.  Read the goal.', '2.  Drag the part in. Set your number.', '3.  Press Start. The machine proves it.'];
+    const steps = ['1.  Read the goal.', '2.  Drag parts from the bin. Tinker.', '3.  Press Start. The machine proves it.'];
     steps.forEach((s, i) => text(b, s, 300, 540 + i * 50, { size: 32, color: INK }));
     text(b, 'Archimedes · Hero · Leonardo · Galileo · Stevin · Torricelli · Boyle · Charles', BW / 2, 940, { size: 22, align: 'center', italic: true, color: INK2 });
     const rec = this.tutor.recommend(), P = PUZZLES.find(x => x.id === rec.id), p = this.p;
@@ -202,7 +269,7 @@ export class Game {
   }
   drawCodex() {
     const b = this.b, tu = this.tutor;
-    text(b, 'The Codex', 40, 70, { size: 52, bold: true }); text(b, 'Each seal is a machine. Stars = level reached.', 330, 66, { size: 24, italic: true, color: INK2 });
+    text(b, 'The Codex', 40, 70, { size: 52, bold: true }); text(b, 'Each seal is a machine. Stars = how far you tinkered.', 330, 66, { size: 24, italic: true, color: INK2 });
     const rowH = 124;
     CHAPTERS.forEach((ch, ci) => {
       const y = 110 + ci * rowH, pr = tu.chapterProgress(ci);
@@ -272,10 +339,18 @@ export class Game {
       if (it.snap) { b.beginPath(); b.arc(X(it.snap.x), Y(it.snap.y), 40 + pulse * 8, 0, 7); b.setLineDash([8, 6]); b.strokeStyle = `rgba(212,160,23,${0.5 + pulse * 0.5})`; b.lineWidth = 4; b.stroke(); b.setLineDash([]); }
       if (it.rail) { const r = it.rail; b.setLineDash([8, 6]); b.strokeStyle = `rgba(212,160,23,${0.5 + pulse * 0.5})`; b.lineWidth = 5; b.beginPath(); if (r.axis === 'y') { b.moveTo(X(r.x), Y(r.y0)); b.lineTo(X(r.x), Y(r.y1)); } else { b.moveTo(X(r.x0), Y(r.y)); b.lineTo(X(r.x1), Y(r.y)); } b.stroke(); b.setLineDash([]); }
     }
-    if (!this.running) for (const it of P.bin(v)) if (it.rail && this.placed.has(it.key)) { const r = it.rail, pos = r.fromAns(this.answer ?? 0); const hx = r.axis === 'y' ? r.x : pos, hy = r.axis === 'y' ? pos : r.y; b.beginPath(); b.arc(X(hx), Y(hy), 16, 0, 7); b.fillStyle = 'rgba(212,160,23,0.85)'; b.fill(); b.strokeStyle = INK; b.lineWidth = 2; b.stroke(); text(b, '⇔', X(hx), Y(hy) + 7, { size: 20, align: 'center', bold: true }); text(b, `${fmtNum(this.answer, q.step)} ${q.unit}`, X(hx), Y(hy) - 26, { size: 22, bold: true, align: 'center', color: RED }); }
+    if (!this.running) for (const it of P.bin(v)) if (it.rail && this.placed.has(it.key)) { const r = it.rail, pos = r.fromAns(this.answer ?? 0); const hx = r.axis === 'y' ? r.x : pos, hy = r.axis === 'y' ? pos : r.y; b.beginPath(); b.arc(X(hx), Y(hy), 16, 0, 7); b.fillStyle = 'rgba(212,160,23,0.85)'; b.fill(); b.strokeStyle = INK; b.lineWidth = 2; b.stroke(); text(b, '⇔', X(hx), Y(hy) + 7, { size: 20, align: 'center', bold: true }); if (showNumberDial(this.mathLevel)) text(b, `${fmtNum(this.answer, q.step)} ${q.unit}`, X(hx), Y(hy) - 26, { size: 22, bold: true, align: 'center', color: RED }); }
     const rot = P.rotate?.(v);
     if (rot && q.kind === 'angle' && !this.running) { const a = (this.answer ?? 45) * Math.PI / 180, hx = rot.x + rot.len * Math.cos(a), hy = rot.y + rot.len * Math.sin(a); b.beginPath(); b.arc(X(hx), Y(hy), 18, 0, 7); b.fillStyle = 'rgba(212,160,23,0.85)'; b.fill(); b.strokeStyle = INK; b.lineWidth = 2; b.stroke(); text(b, '↻', X(hx), Y(hy) + 8, { size: 24, align: 'center', bold: true }); }
-    if (this.running) text(b, `t = ${this.sim.t.toFixed(1)} s`, 24, 150, { size: 22, italic: true, color: INK2 });
+    if (this.ghost && !this.running) {
+      const g = this.ghost, pulse = 0.45 + 0.55 * Math.sin(this.t * 3);
+      b.save(); b.globalAlpha = 0.35 + 0.25 * pulse; b.setLineDash([6, 5]);
+      b.beginPath(); b.arc(X(g.x), Y(g.y), (g.r || 0.5) * 96, 0, 7);
+      b.strokeStyle = 'rgba(79,107,46,0.95)'; b.lineWidth = 5; b.stroke();
+      b.fillStyle = 'rgba(79,107,46,0.18)'; b.fill(); b.setLineDash([]); b.restore();
+      text(b, 'ghost hint', X(g.x), Y(g.y) - (g.r || 0.5) * 96 - 12, { size: 18, align: 'center', italic: true, color: GREEN });
+    }
+    if (this.running && showNumberDial(this.mathLevel)) text(b, `t = ${this.sim.t.toFixed(1)} s`, 24, 150, { size: 22, italic: true, color: INK2 });
     if (this.overlay === 'concept') this.drawConcept();
     if (this.overlay === 'result') this.drawResult();
     this.drawPanel();
@@ -285,13 +360,20 @@ export class Game {
     b.fillStyle = 'rgba(30,18,6,0.45)'; b.fillRect(0, 0, BW, BH);
     this.card(b, 110, 140, BW - 220, 680);
     this.img(b, P.img, 150, 200, 330, 440, { frame: true });
-    text(b, 'Concept', 520, 230, { size: 26, italic: true, color: RED });
+    text(b, 'The Machine', 520, 230, { size: 26, italic: true, color: RED });
     text(b, P.title, 520, 280, { size: 38, bold: true, max: 480 });
     let y = text(b, P.concept.line, 520, 350, { size: 30, max: 470, lh: 38 });
-    b.fillStyle = 'rgba(160,69,42,0.1)'; b.fillRect(510, y, 500, 110);
-    text(b, P.concept.formula, 760, y + 66, { size: P.concept.formula.length > 34 ? 22 : 30, align: 'center', bold: true, max: 480 });
-    text(b, `"${P.quote}"`, 520, y + 160, { size: 22, italic: true, max: 470, color: INK2 });
-    text(b, `— ${P.who}`, 1000, y + 228, { size: 20, align: 'right', italic: true });
+    if (showFormula(this.mathLevel) && P.concept.formula) {
+      b.fillStyle = 'rgba(160,69,42,0.1)'; b.fillRect(510, y, 500, 110);
+      text(b, P.concept.formula, 760, y + 66, { size: P.concept.formula.length > 34 ? 22 : 30, align: 'center', bold: true, max: 480 });
+      y += 120;
+    } else {
+      b.fillStyle = 'rgba(79,107,46,0.12)'; b.fillRect(510, y, 500, 90);
+      text(b, 'Build it with parts. Press Start. Watch what happens.', 760, y + 55, { size: 24, align: 'center', max: 460 });
+      y += 100;
+    }
+    text(b, `"${P.quote}"`, 520, y + 40, { size: 22, italic: true, max: 470, color: INK2 });
+    text(b, `— ${P.who}`, 1000, y + 108, { size: 20, align: 'right', italic: true });
     this.btn('board', BW / 2 - 150, 730, 300, 72, 'Got it ▶', () => { this.overlay = null; }, { primary: true, size: 30, id: 'gotit' });
   }
   drawResult() {
@@ -305,7 +387,8 @@ export class Game {
       text(b, 'PROBATUM', 0, -4, { size: 24, bold: true, align: 'center', color: '#fbe9d6' }); text(b, 'EST', 0, 26, { size: 24, bold: true, align: 'center', color: '#fbe9d6' }); b.restore();
       text(b, 'It is proven!', cx, 440, { size: 46, bold: true, align: 'center', color: GREEN });
       text(b, r.msg, cx, 495, { size: 27, align: 'center', max: 700 });
-      if (this.adapt) text(b, this.adapt.text, cx, 560, { size: 25, align: 'center', italic: true, color: RED, max: 700 });
+      if (this.observeLine) text(b, this.observeLine, cx, 545, { size: 23, align: 'center', italic: true, color: INK2, max: 700 });
+      if (this.adapt) text(b, this.adapt.text, cx, this.observeLine ? 590 : 560, { size: 25, align: 'center', italic: true, color: RED, max: 700 });
       const st = this.tutor.p(P.id); for (let s = 0; s < 4; s++) text(b, s < st.stars ? '★' : '☆', cx - 60 + s * 40, 625, { size: 36, color: s < st.stars ? GOLD : 'rgba(58,39,22,0.4)' });
       const nx = this.tutor.next(P.id);
       this.btn('board', cx - 330, 680, 300, 76, 'Next machine ▶', () => this.loadPuzzle(nx), { primary: true, size: 27, id: 'next' });
@@ -313,14 +396,14 @@ export class Game {
     } else {
       text(b, 'Not yet!', cx, 270, { size: 50, bold: true, align: 'center', color: RED });
       let y = text(b, r.msg, cx, 330, { size: 28, align: 'center', max: 720 });
-      text(b, `You said ${fmtNum(this.answer, this.v.q.step)} ${this.v.q.unit}.`, cx, y + 10, { size: 22, align: 'center', italic: true });
+      if (showNumberDial(this.mathLevel)) text(b, `You used ${fmtNum(this.answer, this.v.q.step)} ${this.v.q.unit}.`, cx, y + 10, { size: 22, align: 'center', italic: true });
       y += 70;
       if (this.diag) { b.fillStyle = 'rgba(160,69,42,0.12)'; b.fillRect(220, y - 36, BW - 440, 76); y = text(b, this.diag, cx, y + 10, { size: 25, align: 'center', color: RED, bold: true, max: 680 }) + 20; }
-      const hl = Math.max(1, this.hintLevel), hints = P.hints(this.v);
+      const hl = Math.max(1, this.hintLevel), hints = this.activeHints();
       y = text(b, `Hint: ${hints[Math.min(hl, 3) - 1]}`, cx, y + 20, { size: 24, align: 'center', max: 700 });
       const k = this.adapt?.kind;
       if (k === 'easier' || k === 'worked') {
-        if (k === 'worked') text(b, `Solution: ${hints[2]}`, cx, y + 20, { size: 23, align: 'center', max: 700, color: GREEN, bold: true });
+        if (k === 'worked') text(b, this.ghost ? 'A green ghost marks a working spot — try that placement.' : `Try: ${hints[2]}`, cx, y + 20, { size: 23, align: 'center', max: 700, color: GREEN, bold: true });
         this.btn('board', cx - 330, 680, 300, 76, k === 'easier' ? 'Easier one ▶' : 'Fresh one ▶', () => this.loadPuzzle(P.id), { primary: true, size: 27, id: 'easier' });
         this.btn('board', cx + 30, 680, 300, 76, 'Try this again', () => { this.overlay = null; this.reset(); }, { size: 25, id: 'retry' });
       } else this.btn('board', cx - 160, 680, 320, 76, 'Try again ↻', () => { this.overlay = null; this.reset(); }, { primary: true, size: 28, id: 'retry' });
@@ -331,45 +414,75 @@ export class Game {
     this.img(p, P.img, 22, 22, 96, 110, { frame: true, sepia: true });
     text(p, P.who, 136, 44, { size: 22, bold: true, max: 280, lh: 24 });
     text(p, `"${P.quote}"`, 136, P.who.length > 22 ? 98 : 74, { size: 17, italic: true, max: 280, lh: 20, color: INK2 });
-    p.fillStyle = 'rgba(122,85,48,0.12)'; p.fillRect(16, 150, PW - 32, 22 + v.given.length * 32);
-    v.given.forEach((g, i) => text(p, g, 28, 180 + i * 32, { size: g.length > 34 ? 18 : 21 }));
-    let y = 196 + v.given.length * 32;
-    y = text(p, q.text, 24, y + 10, { size: 24, bold: true, max: PW - 48, lh: 28, color: RED });
-    // value box
-    const vy = y; p.fillStyle = '#f8eed3'; p.fillRect(24, vy, PW - 48, 70); p.strokeStyle = this.typing != null ? GOLD : INK; p.lineWidth = this.typing != null ? 4 : 2.5; p.strokeRect(24, vy, PW - 48, 70);
-    const shown = this.typing != null ? this.typing + (Math.floor(this.t * 2) % 2 ? '|' : '') : fmtNum(this.answer, q.step);
-    text(p, `${shown}  ${q.unit}`, PW / 2, vy + 50, { size: 40, bold: true, align: 'center' });
-    y = vy + 82;
-    const dis = this.running;
-    if (q.kind === 'gear') {
-      const ch = q.choices, i = ch.indexOf(this.answer);
-      this.btn('panel', 24, y, 186, 60, '◀ fewer', () => { const nx = ch[Math.max(0, (i < 0 ? 1 : i) - 1)]; this.answer = nx; for (const c of ch) this.placed.delete('g' + c); this.placed.add('g' + nx); this.rebuild(); }, { size: 22, disabled: dis, id: 'dial-' });
-      this.btn('panel', 222, y, 186, 60, 'more ▶', () => { const nx = ch[Math.min(ch.length - 1, i + 1)]; this.answer = nx; for (const c of ch) this.placed.delete('g' + c); this.placed.add('g' + nx); this.rebuild(); }, { size: 22, disabled: dis, id: 'dial+' });
-    } else {
+    const sheet = showGivenSheet(this.mathLevel) && v.mathGiven ? v.mathGiven : v.given;
+    p.fillStyle = 'rgba(122,85,48,0.12)'; p.fillRect(16, 150, PW - 32, 22 + sheet.length * 32);
+    sheet.forEach((g, i) => text(p, g, 28, 180 + i * 32, { size: g.length > 34 ? 18 : 21 }));
+    let y = 196 + sheet.length * 32;
+    y = text(p, q.kind === 'parts' || q.kind === 'gear' ? 'Pick a part · drop on the glow' : q.kind === 'place' ? 'Slide along the glowing rail' : q.kind === 'angle' ? 'Turn the aim handle' : q.text, 24, y + 10, { size: 22, bold: true, max: PW - 48, lh: 28, color: RED });
+
+    // Optional predict-before-run (math level ≥ 2)
+    const pred = this.mathLevel >= 2 ? predictPrompt(P, v) : null;
+    if (pred && !this.running) {
+      text(p, pred.text, 24, y + 8, { size: 18, italic: true, max: PW - 48, color: INK2 });
+      y += 36;
+      pred.options.forEach((opt, i) => {
+        const sel = this.predictChoice === i;
+        this.btn('panel', 24 + (i % 3) * 130, y, 122, 40, opt, () => { this.predictChoice = i; }, { size: 15, fill: sel ? GREEN : undefined, id: 'pred-' + i });
+      });
+      y += 50;
+    }
+
+    // Number dial only at mathLevel ≥ 4 (and not for gear/parts which use physical picks)
+    const dialOk = showNumberDial(this.mathLevel) && (q.kind === 'number' || q.kind === 'angle' || q.kind === 'place');
+    if (dialOk) {
+      const vy = y; p.fillStyle = '#f8eed3'; p.fillRect(24, vy, PW - 48, 70); p.strokeStyle = this.typing != null ? GOLD : INK; p.lineWidth = this.typing != null ? 4 : 2.5; p.strokeRect(24, vy, PW - 48, 70);
+      const shown = this.typing != null ? this.typing + (Math.floor(this.t * 2) % 2 ? '|' : '') : fmtNum(this.answer, q.step);
+      text(p, `${shown}  ${q.unit}`, PW / 2, vy + 50, { size: 40, bold: true, align: 'center' });
+      y = vy + 82;
+      const dis = this.running;
       const st = q.step, steps = st >= 1 ? [10, 1] : st >= 0.1 ? [1, 0.1] : [1, 0.1, 0.01];
       const all = [...steps.map(s => -s), ...steps.slice().reverse()], w = (PW - 48 - (all.length - 1) * 6) / all.length;
       all.forEach((d, k) => this.btn('panel', 24 + k * (w + 6), y, w, 60, `${d > 0 ? '+' : '−'}${+Math.abs(d).toFixed(2)}`, () => { this.typing = null; this.setAnswer((this.answer ?? 0) + d); }, { size: all.length > 4 ? 19 : 22, disabled: dis, id: `dial${d > 0 ? '+' : '-'}${Math.abs(d)}` }));
+      y += 76;
+    } else {
+      // Status chip: which part is selected
+      const vy = y;
+      p.fillStyle = 'rgba(79,107,46,0.12)'; p.fillRect(24, vy, PW - 48, 52); p.strokeStyle = INK; p.lineWidth = 2; p.strokeRect(24, vy, PW - 48, 52);
+      const status = this.answer != null
+        ? (q.kind === 'gear' ? `Fitted: ${this.answer} teeth` : q.kind === 'angle' ? 'Aim set — load the bolt' : q.kind === 'place' ? 'Part on the rail' : 'Part placed')
+        : 'No part placed yet';
+      text(p, status, PW / 2, vy + 34, { size: 22, bold: true, align: 'center', color: this.answer != null ? GREEN : INK2 });
+      y = vy + 64;
     }
-    y += 76;
+
     this.btn('panel', 24, y, 214, 84, this.running ? 'Running…' : '▶ Start', () => this.start(), { primary: true, size: 32, disabled: this.running, id: 'start' });
     this.btn('panel', 248, y, 76, 84, '↺', () => { this.overlay = null; this.reset(); }, { size: 34, id: 'reset' });
     this.btn('panel', 332, y, 76, 84, '?', () => this.hint(), { size: 34, id: 'hint' });
     y += 100;
-    if (this.hintLevel > 0) { const h = P.hints(v); p.fillStyle = 'rgba(160,69,42,0.1)'; p.fillRect(16, y - 6, PW - 32, 118); text(p, `Hint ${this.hintLevel}/3`, 26, y + 18, { size: 18, italic: true, color: RED }); text(p, h[this.hintLevel - 1], 26, y + 46, { size: 20, max: PW - 56, lh: 24, color: INK }); y += 124; }
-    // parts bin
-    const binY = Math.max(y, 700);
+    if (this.hintLevel > 0) {
+      const h = this.activeHints();
+      p.fillStyle = 'rgba(160,69,42,0.1)'; p.fillRect(16, y - 6, PW - 32, 118);
+      text(p, `Hint ${this.hintLevel}/3`, 26, y + 18, { size: 18, italic: true, color: RED });
+      text(p, h[this.hintLevel - 1], 26, y + 46, { size: 20, max: PW - 56, lh: 24, color: INK });
+      y += 124;
+    }
+    // parts bin — larger when many choices
+    const items = P.bin(v);
+    const binY = Math.min(Math.max(y, 520), 700);
     text(p, 'Parts bin', 24, binY + 6, { size: 22, bold: true }); text(p, 'drag onto the board', 140, binY + 6, { size: 17, italic: true, color: INK2 });
-    const items = P.bin(v), cols = items.length > 2 ? 3 : 2, tw = (PW - 48 - (cols - 1) * 8) / cols, th = 96;
+    const cols = items.length > 4 ? 3 : items.length > 2 ? 3 : 2;
+    const tw = (PW - 48 - (cols - 1) * 8) / cols, th = items.length > 6 ? 78 : 96;
     items.forEach((it, k) => {
       const x = 24 + (k % cols) * (tw + 8), yy = binY + 18 + Math.floor(k / cols) * (th + 8), used = this.placed.has(it.key);
+      if (yy + th > PH - 80) return;
       p.fillStyle = used ? 'rgba(79,107,46,0.18)' : 'rgba(168,115,61,0.25)'; p.fillRect(x, yy, tw, th); p.strokeStyle = used ? GREEN : INK; p.lineWidth = 2; p.strokeRect(x, yy, tw, th);
-      drawIcon(p, it.icon, x + tw / 2, yy + 40, 64, { teeth: it.teeth });
-      text(p, used ? '✓ ' + it.label : it.label, x + tw / 2, yy + th - 10, { size: 17, align: 'center', bold: used });
+      drawIcon(p, it.icon, x + tw / 2, yy + th * 0.42, Math.min(64, th - 28), { teeth: it.teeth });
+      text(p, used ? '✓ ' + it.label : it.label, x + tw / 2, yy + th - 10, { size: items.length > 6 ? 14 : 17, align: 'center', bold: used });
       if (!this.running) this.buttons.panel.push({ x, y: yy, w: tw, h: th, fn: () => { }, drag: { kind: 'bin', item: it }, id: 'bin-' + it.key });
     });
     const fy = PH - 70;
     this.btn('panel', 24, fy, 124, 54, 'Codex', () => { this.screen = 'codex'; }, { size: 21, id: 'codex' });
-    this.btn('panel', 156, fy, 124, 54, 'Concept', () => { this.overlay = 'concept'; }, { size: 21, id: 'concept' });
+    this.btn('panel', 156, fy, 124, 54, 'Machine', () => { this.overlay = 'concept'; }, { size: 21, id: 'concept' });
     this.btn('panel', 288, fy, 120, 54, 'Gallery', () => { this.screen = 'gallery'; this.galleryOpen = null; }, { size: 21, id: 'gallery' });
   }
 }

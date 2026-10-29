@@ -59,10 +59,29 @@ window.__ren = {
   game, PUZZLES, DT,
   list: () => PUZZLES.map(p => ({ id: p.id, ch: p.ch, title: p.title })),
   load: (id, tier) => { game.loadPuzzle(id, { tier }); game.overlay = null; game.draw(); return game.v; },
-  solve: () => { const q = game.v.q; game.placeAll(); if (q.kind === 'gear') { game.answer = q.ans; game.placed.add('g' + q.ans); game.rebuild(); } else game.setAnswer(q.ans); game.placeAll(); return q.ans; },
-  answer: a => { game.placeAll(); if (game.v.q.kind === 'gear') { game.answer = a; for (const c of game.v.q.choices) game.placed.delete('g' + c); game.placed.add('g' + a); game.rebuild(); } else game.setAnswer(a); game.placeAll(); },
+  solve: () => { const q = game.v.q; game.answer = q.ans; game.placeAll(); return q.ans; },
+  answer: a => {
+    const q = game.v.q; game.answer = a;
+    const bin = game.P.bin(game.v);
+    if (q.kind === 'gear') {
+      for (const c of q.choices) game.placed.delete('g' + c);
+      game.placed.add('g' + a);
+    } else if (q.kind === 'parts') {
+      for (const it of bin) if (it.group) game.placed.delete(it.key);
+      const it = bin.find(b => b.value != null && Math.abs(b.value - a) < 1e-9);
+      if (it) game.placed.add(it.key);
+      else { // nearest choice
+        const near = bin.filter(b => b.value != null).sort((x, y) => Math.abs(x.value - a) - Math.abs(y.value - a))[0];
+        if (near) { game.placed.add(near.key); game.answer = near.value; }
+      }
+    } else {
+      for (const it of bin) if (it.req || it.rail) game.placed.add(it.key);
+    }
+    game.rebuild();
+  },
   run: () => { const r = game.runToEnd(); game.draw(); return r; },
-  state: () => JSON.parse(localStorage.getItem('renlab.v1') || 'null'),
+  state: () => JSON.parse(localStorage.getItem('renlab.v2') || localStorage.getItem('renlab.v1') || 'null'),
+  mathLevel: () => game.mathLevel,
   draw: () => game.draw(),
   mode: () => mode,
   vr: () => vrMod,
