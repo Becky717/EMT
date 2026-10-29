@@ -1,0 +1,956 @@
+{
+  "attribution": "Map data © OpenStreetMap contributors (ODbL). Locations verified via Nominatim.",
+  "station": {
+    "name": "Station 2 (Arab)",
+    "lat": 34.3295,
+    "lon": -86.4889,
+    "note": "fictional staging near Arab High / N Main"
+  },
+  "area": "North Alabama — Joppa / Arab / Guntersville / Cullman / Huntsville corridor",
+  "generated": "2026-10-29",
+  "locations": [
+    {
+      "id": "us231_hwy69",
+      "name": "US-231 at Hwy 69 (Cullman Rd)",
+      "road": "US-231",
+      "cross": "AL-69 / Cullman Road",
+      "town": "Arab",
+      "county": "Marshall",
+      "lat": 34.31635,
+      "lon": -86.49795,
+      "scene": "roadside",
+      "tags": [
+        "mvc",
+        "highway",
+        "trauma",
+        "bleed"
+      ],
+      "cadPlace": "US-231 northbound at Hwy 69, Arab",
+      "mi": 1,
+      "etaMin": 3,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "us231_nb_arab",
+      "name": "US-231 northbound, Arab",
+      "road": "US-231",
+      "town": "Arab",
+      "county": "Cullman/Marshall",
+      "lat": 34.34608,
+      "lon": -86.50403,
+      "scene": "roadside",
+      "tags": [
+        "mvc",
+        "highway",
+        "trauma",
+        "bleed",
+        "acs"
+      ],
+      "cadPlace": "US-231 northbound near Brindlee Mtn Pkwy, Arab",
+      "mi": 1.4,
+      "etaMin": 3,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "us231_joppa",
+      "name": "US-231 near Joppa",
+      "road": "US-231",
+      "town": "Joppa",
+      "county": "Cullman",
+      "lat": 34.29991,
+      "lon": -86.49783,
+      "scene": "roadside",
+      "tags": [
+        "mvc",
+        "highway",
+        "trauma"
+      ],
+      "cadPlace": "US-231 at Joppa, northbound",
+      "mi": 2.1,
+      "etaMin": 4,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "us431_guntersville",
+      "name": "US-431 (Florida Short Route), Guntersville",
+      "road": "US-431",
+      "town": "Guntersville",
+      "county": "Marshall",
+      "lat": 34.32067,
+      "lon": -86.31207,
+      "scene": "roadside",
+      "tags": [
+        "mvc",
+        "highway",
+        "trauma",
+        "bleed"
+      ],
+      "cadPlace": "US-431 / Florida Short Route, Guntersville",
+      "mi": 10.1,
+      "etaMin": 17,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "al79_guntersville",
+      "name": "AL-79, Guntersville",
+      "road": "AL-79",
+      "town": "Guntersville",
+      "county": "Marshall",
+      "lat": 34.34129,
+      "lon": -86.30896,
+      "scene": "roadside",
+      "tags": [
+        "mvc",
+        "highway"
+      ],
+      "cadPlace": "AL-79, Guntersville",
+      "mi": 10.3,
+      "etaMin": 17,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "i565_hsv",
+      "name": "I-565, Huntsville",
+      "road": "I-565",
+      "town": "Huntsville",
+      "county": "Madison",
+      "lat": 34.72473,
+      "lon": -86.61036,
+      "scene": "roadside",
+      "tags": [
+        "mvc",
+        "highway",
+        "trauma",
+        "bleed"
+      ],
+      "cadPlace": "I-565 eastbound, Huntsville",
+      "mi": 28.2,
+      "etaMin": 47,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "memorial_pkwy",
+      "name": "Memorial Parkway SW, Huntsville",
+      "road": "Memorial Parkway",
+      "town": "Huntsville",
+      "county": "Madison",
+      "lat": 34.60293,
+      "lon": -86.56324,
+      "scene": "roadside",
+      "tags": [
+        "mvc",
+        "highway",
+        "acs"
+      ],
+      "cadPlace": "Memorial Parkway Southwest, Huntsville",
+      "mi": 19.4,
+      "etaMin": 32,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "us278_cullman",
+      "name": "US-278, Cullman",
+      "road": "US-278",
+      "town": "Cullman",
+      "county": "Cullman",
+      "lat": 34.17053,
+      "lon": -86.8777,
+      "scene": "roadside",
+      "tags": [
+        "mvc",
+        "highway"
+      ],
+      "cadPlace": "US-278, Cullman",
+      "mi": 24.8,
+      "etaMin": 41,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "al69_cullman",
+      "name": "AL-69, Cullman",
+      "road": "AL-69",
+      "town": "Cullman",
+      "county": "Cullman",
+      "lat": 34.20749,
+      "lon": -86.87884,
+      "scene": "roadside",
+      "tags": [
+        "mvc",
+        "highway"
+      ],
+      "cadPlace": "AL-69, Cullman",
+      "mi": 23.8,
+      "etaMin": 40,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "brindlee_pkwy",
+      "name": "N Brindlee Mountain Parkway, Arab",
+      "road": "N Brindlee Mountain Parkway",
+      "town": "Arab",
+      "county": "Marshall",
+      "lat": 34.34461,
+      "lon": -86.50371,
+      "scene": "roadside",
+      "tags": [
+        "mvc",
+        "acs",
+        "store"
+      ],
+      "cadPlace": "North Brindlee Mountain Parkway, Arab",
+      "mi": 1.3,
+      "etaMin": 3,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "joppa_rd",
+      "name": "Joppa Road, Joppa",
+      "road": "Joppa Road",
+      "town": "Joppa",
+      "county": "Cullman",
+      "lat": 34.29787,
+      "lon": -86.5586,
+      "scene": "rural",
+      "tags": [
+        "farm",
+        "anaph",
+        "hypo",
+        "heat",
+        "home"
+      ],
+      "cadPlace": "Joppa Road, Joppa",
+      "mi": 4.5,
+      "etaMin": 8,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "hulaco_rd",
+      "name": "Hulaco Road, Hulaco",
+      "road": "Hulaco Road",
+      "town": "Hulaco",
+      "county": "Morgan",
+      "lat": 34.31428,
+      "lon": -86.61475,
+      "scene": "rural",
+      "tags": [
+        "farm",
+        "anaph",
+        "hypo",
+        "home",
+        "co"
+      ],
+      "cadPlace": "Hulaco Road, Hulaco",
+      "mi": 7.3,
+      "etaMin": 12,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "scant_city",
+      "name": "Scant City Road",
+      "road": "Scant City Road",
+      "town": "Scant City",
+      "county": "Marshall",
+      "lat": 34.37472,
+      "lon": -86.42334,
+      "scene": "rural",
+      "tags": [
+        "farm",
+        "home",
+        "bleed"
+      ],
+      "cadPlace": "Scant City Road, Marshall County",
+      "mi": 4.9,
+      "etaMin": 8,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "baileyton",
+      "name": "Baileyton area",
+      "road": "county roads",
+      "town": "Baileyton",
+      "county": "Cullman",
+      "lat": 34.26232,
+      "lon": -86.61277,
+      "scene": "rural",
+      "tags": [
+        "farm",
+        "anaph",
+        "hypo",
+        "heat"
+      ],
+      "cadPlace": "Baileyton, Cullman County",
+      "mi": 8.5,
+      "etaMin": 14,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "eva",
+      "name": "Eva area",
+      "road": "county roads",
+      "town": "Eva",
+      "county": "Morgan",
+      "lat": 34.33232,
+      "lon": -86.75889,
+      "scene": "rural",
+      "tags": [
+        "farm",
+        "home",
+        "hypo"
+      ],
+      "cadPlace": "Eva, Morgan County",
+      "mi": 15.4,
+      "etaMin": 26,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "fairview",
+      "name": "Fairview area",
+      "road": "county roads",
+      "town": "Fairview",
+      "county": "Cullman",
+      "lat": 34.25537,
+      "lon": -86.68805,
+      "scene": "rural",
+      "tags": [
+        "farm",
+        "home"
+      ],
+      "cadPlace": "Fairview, Cullman County",
+      "mi": 12.5,
+      "etaMin": 21,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "ruth",
+      "name": "Ruth community",
+      "road": "county roads",
+      "town": "Ruth",
+      "county": "Marshall",
+      "lat": 34.36426,
+      "lon": -86.55666,
+      "scene": "rural",
+      "tags": [
+        "farm",
+        "home",
+        "anaph"
+      ],
+      "cadPlace": "Ruth, Marshall County",
+      "mi": 4.6,
+      "etaMin": 8,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "oleander",
+      "name": "Oleander community",
+      "road": "county roads",
+      "town": "Oleander",
+      "county": "Marshall",
+      "lat": 34.41398,
+      "lon": -86.52805,
+      "scene": "rural",
+      "tags": [
+        "farm",
+        "home"
+      ],
+      "cadPlace": "Oleander, Marshall County",
+      "mi": 6.2,
+      "etaMin": 10,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "laceys",
+      "name": "Laceys Spring",
+      "road": "AL-36 area",
+      "town": "Laceys Spring",
+      "county": "Morgan",
+      "lat": 34.53426,
+      "lon": -86.60416,
+      "scene": "rural",
+      "tags": [
+        "home",
+        "hypo",
+        "acs"
+      ],
+      "cadPlace": "Laceys Spring, Morgan County",
+      "mi": 15.6,
+      "etaMin": 26,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "union_grove",
+      "name": "Union Grove",
+      "road": "town roads",
+      "town": "Union Grove",
+      "county": "Marshall",
+      "lat": 34.40176,
+      "lon": -86.44915,
+      "scene": "home",
+      "tags": [
+        "home",
+        "opioid",
+        "infant",
+        "asthma"
+      ],
+      "cadPlace": "Union Grove, Marshall County",
+      "mi": 5.5,
+      "etaMin": 9,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "new_hope",
+      "name": "New Hope",
+      "road": "town roads",
+      "town": "New Hope",
+      "county": "Madison",
+      "lat": 34.53703,
+      "lon": -86.39443,
+      "scene": "home",
+      "tags": [
+        "home",
+        "acs",
+        "asthma"
+      ],
+      "cadPlace": "New Hope, Madison County",
+      "mi": 15.3,
+      "etaMin": 26,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "grant",
+      "name": "Grant",
+      "road": "town roads",
+      "town": "Grant",
+      "county": "Marshall",
+      "lat": 34.52714,
+      "lon": -86.25298,
+      "scene": "home",
+      "tags": [
+        "home",
+        "opioid"
+      ],
+      "cadPlace": "Grant, Marshall County",
+      "mi": 19.2,
+      "etaMin": 32,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "owens",
+      "name": "Owens Cross Roads",
+      "road": "town roads",
+      "town": "Owens Cross Roads",
+      "county": "Madison",
+      "lat": 34.58815,
+      "lon": -86.45888,
+      "scene": "home",
+      "tags": [
+        "home",
+        "acs"
+      ],
+      "cadPlace": "Owens Cross Roads, Madison County",
+      "mi": 18,
+      "etaMin": 30,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "arab_hs",
+      "name": "Arab High School",
+      "road": "8th Avenue NE",
+      "town": "Arab",
+      "county": "Marshall",
+      "lat": 34.32954,
+      "lon": -86.48888,
+      "scene": "school",
+      "tags": [
+        "school",
+        "arrest",
+        "sca",
+        "asthma",
+        "hypo"
+      ],
+      "cadPlace": "Arab High School, 8th Ave NE, Arab",
+      "mi": 0,
+      "etaMin": 3,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "arab_elem",
+      "name": "Arab Elementary School",
+      "road": "school campus",
+      "town": "Arab",
+      "county": "Marshall",
+      "lat": 34.32928,
+      "lon": -86.49376,
+      "scene": "school",
+      "tags": [
+        "school",
+        "infant",
+        "asthma",
+        "anaph"
+      ],
+      "cadPlace": "Arab Elementary School, Arab",
+      "mi": 0.3,
+      "etaMin": 3,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "arab_jh",
+      "name": "Arab Junior High School",
+      "road": "school campus",
+      "town": "Arab",
+      "county": "Marshall",
+      "lat": 34.31221,
+      "lon": -86.51075,
+      "scene": "school",
+      "tags": [
+        "school",
+        "sca",
+        "asthma"
+      ],
+      "cadPlace": "Arab Junior High School, Arab",
+      "mi": 1.7,
+      "etaMin": 3,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "brindlee_hs",
+      "name": "Brindlee Mountain High School",
+      "road": "Scant City Road",
+      "town": "Scant City",
+      "county": "Marshall",
+      "lat": 34.37726,
+      "lon": -86.42113,
+      "scene": "school",
+      "tags": [
+        "school",
+        "sca",
+        "arrest",
+        "asthma"
+      ],
+      "cadPlace": "Brindlee Mountain High School, Scant City Rd",
+      "mi": 5.1,
+      "etaMin": 8,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "guntersville_hs",
+      "name": "Guntersville High School",
+      "road": "school campus",
+      "town": "Guntersville",
+      "county": "Marshall",
+      "lat": 34.32027,
+      "lon": -86.31456,
+      "scene": "school",
+      "tags": [
+        "school",
+        "sca",
+        "arrest"
+      ],
+      "cadPlace": "Guntersville High School, Guntersville",
+      "mi": 10,
+      "etaMin": 17,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "walmart_arab",
+      "name": "Walmart Supercenter, Arab",
+      "road": "N Brindlee Mountain Parkway",
+      "town": "Arab",
+      "county": "Marshall",
+      "lat": 34.34176,
+      "lon": -86.50011,
+      "scene": "store",
+      "tags": [
+        "store",
+        "acs",
+        "chf",
+        "opioid",
+        "hypo",
+        "asa"
+      ],
+      "cadPlace": "Walmart Supercenter, N Brindlee Mtn Pkwy, Arab",
+      "mi": 1.1,
+      "etaMin": 3,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "murphy_arab",
+      "name": "Murphy USA, Arab",
+      "road": "N Brindlee Mountain Parkway",
+      "town": "Arab",
+      "county": "Marshall",
+      "lat": 34.34281,
+      "lon": -86.50259,
+      "scene": "store",
+      "tags": [
+        "store",
+        "opioid",
+        "acs"
+      ],
+      "cadPlace": "Murphy USA (gas), Arab",
+      "mi": 1.2,
+      "etaMin": 3,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "walmart_gunt",
+      "name": "Walmart Supercenter, Guntersville",
+      "road": "US-431 area",
+      "town": "Guntersville",
+      "county": "Marshall",
+      "lat": 34.29939,
+      "lon": -86.27899,
+      "scene": "store",
+      "tags": [
+        "store",
+        "acs",
+        "chf",
+        "opioid"
+      ],
+      "cadPlace": "Walmart Supercenter, Guntersville",
+      "mi": 12.2,
+      "etaMin": 20,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "s_main_arab",
+      "name": "South Main Street, Arab",
+      "road": "South Main Street",
+      "town": "Arab",
+      "county": "Marshall",
+      "lat": 34.30655,
+      "lon": -86.49659,
+      "scene": "store",
+      "tags": [
+        "store",
+        "acs",
+        "chf",
+        "home"
+      ],
+      "cadPlace": "South Main Street, Arab",
+      "mi": 1.6,
+      "etaMin": 3,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "n_main_arab",
+      "name": "North Main Street, Arab",
+      "road": "North Main Street",
+      "town": "Arab",
+      "county": "Marshall",
+      "lat": 34.33018,
+      "lon": -86.49867,
+      "scene": "store",
+      "tags": [
+        "store",
+        "acs",
+        "church"
+      ],
+      "cadPlace": "North Main Street, Arab",
+      "mi": 0.6,
+      "etaMin": 3,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "lg_state_park",
+      "name": "Lake Guntersville State Park",
+      "road": "park roads",
+      "town": "Guntersville",
+      "county": "Marshall",
+      "lat": 34.39491,
+      "lon": -86.20797,
+      "scene": "dock",
+      "tags": [
+        "boat",
+        "arrest",
+        "drown",
+        "heat",
+        "anaph"
+      ],
+      "cadPlace": "Lake Guntersville State Park",
+      "mi": 16.6,
+      "etaMin": 28,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "muni_park",
+      "name": "Guntersville Municipal Park",
+      "road": "park",
+      "town": "Guntersville",
+      "county": "Marshall",
+      "lat": 34.32334,
+      "lon": -86.30939,
+      "scene": "dock",
+      "tags": [
+        "boat",
+        "arrest",
+        "heat",
+        "anaph"
+      ],
+      "cadPlace": "Guntersville Municipal Park / waterfront",
+      "mi": 10.3,
+      "etaMin": 17,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "civitan",
+      "name": "Civitan Park, Guntersville",
+      "road": "park",
+      "town": "Guntersville",
+      "county": "Marshall",
+      "lat": 34.35818,
+      "lon": -86.31471,
+      "scene": "field",
+      "tags": [
+        "field",
+        "sca",
+        "heat",
+        "anaph"
+      ],
+      "cadPlace": "Civitan Park, Guntersville",
+      "mi": 10.1,
+      "etaMin": 17,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "cathedral",
+      "name": "Cathedral Caverns State Park",
+      "road": "park roads",
+      "town": "Grant area",
+      "county": "Marshall",
+      "lat": 34.5729,
+      "lon": -86.22718,
+      "scene": "field",
+      "tags": [
+        "field",
+        "heat",
+        "anaph",
+        "hypo"
+      ],
+      "cadPlace": "Cathedral Caverns State Park",
+      "mi": 22.5,
+      "etaMin": 37,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "gunter_ave",
+      "name": "Gunter Avenue, Guntersville",
+      "road": "Gunter Avenue",
+      "town": "Guntersville",
+      "county": "Marshall",
+      "lat": 34.34832,
+      "lon": -86.3014,
+      "scene": "store",
+      "tags": [
+        "store",
+        "acs",
+        "chf"
+      ],
+      "cadPlace": "Gunter Avenue, Guntersville",
+      "mi": 10.8,
+      "etaMin": 18,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "courthouse",
+      "name": "Marshall County Courthouse",
+      "road": "Blount / Gunter area",
+      "town": "Guntersville",
+      "county": "Marshall",
+      "lat": 34.35861,
+      "lon": -86.29345,
+      "scene": "store",
+      "tags": [
+        "store",
+        "acs",
+        "chf"
+      ],
+      "cadPlace": "Marshall County Courthouse, Guntersville",
+      "mi": 11.3,
+      "etaMin": 19,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "pilgrims",
+      "name": "Pilgrim's Pride plant area, Guntersville",
+      "road": "industrial park",
+      "town": "Guntersville",
+      "county": "Marshall",
+      "lat": 34.34713,
+      "lon": -86.28107,
+      "scene": "industrial",
+      "tags": [
+        "industrial",
+        "bleed",
+        "co",
+        "trauma"
+      ],
+      "cadPlace": "Pilgrim's Pride plant area, Guntersville",
+      "mi": 11.9,
+      "etaMin": 20,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "crp",
+      "name": "Cummings Research Park, Huntsville",
+      "road": "Explorer Blvd / CRP",
+      "town": "Huntsville",
+      "county": "Madison",
+      "lat": 34.72583,
+      "lon": -86.68355,
+      "scene": "industrial",
+      "tags": [
+        "industrial",
+        "acs",
+        "bleed",
+        "co"
+      ],
+      "cadPlace": "Cummings Research Park, Huntsville",
+      "mi": 29.5,
+      "etaMin": 49,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "explorer_blvd",
+      "name": "Explorer Boulevard NW, Huntsville",
+      "road": "Explorer Boulevard",
+      "town": "Huntsville",
+      "county": "Madison",
+      "lat": 34.72071,
+      "lon": -86.69286,
+      "scene": "industrial",
+      "tags": [
+        "industrial",
+        "acs",
+        "opioid"
+      ],
+      "cadPlace": "Explorer Boulevard NW, Huntsville",
+      "mi": 29.4,
+      "etaMin": 49,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "toyota_hsv",
+      "name": "Toyota Motor Manufacturing, Huntsville",
+      "road": "industrial",
+      "town": "Huntsville",
+      "county": "Madison",
+      "lat": 34.82995,
+      "lon": -86.6388,
+      "scene": "industrial",
+      "tags": [
+        "industrial",
+        "bleed",
+        "trauma",
+        "acs"
+      ],
+      "cadPlace": "Toyota Motor Manufacturing, Huntsville",
+      "mi": 35.6,
+      "etaMin": 59,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "mmc_north",
+      "name": "Marshall Medical Center North",
+      "road": "hospital campus",
+      "town": "Guntersville",
+      "county": "Marshall",
+      "lat": 34.36492,
+      "lon": -86.42163,
+      "scene": "store",
+      "tags": [
+        "store",
+        "acs",
+        "chf",
+        "arrest"
+      ],
+      "cadPlace": "Marshall Medical Center North, Guntersville",
+      "mi": 4.6,
+      "etaMin": 8,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "hsv_hosp",
+      "name": "Huntsville Hospital area",
+      "road": "hospital campus",
+      "town": "Huntsville",
+      "county": "Madison",
+      "lat": 34.72053,
+      "lon": -86.581,
+      "scene": "store",
+      "tags": [
+        "store",
+        "acs",
+        "arrest"
+      ],
+      "cadPlace": "Huntsville Hospital campus",
+      "mi": 27.5,
+      "etaMin": 46,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    {
+      "id": "brindlee_mtn",
+      "name": "Brindlee Mountain ridge",
+      "road": "mountain roads",
+      "town": "Arab",
+      "county": "Marshall",
+      "lat": 34.32361,
+      "lon": -86.503,
+      "scene": "rural",
+      "tags": [
+        "farm",
+        "mvc",
+        "anaph"
+      ],
+      "cadPlace": "Brindlee Mountain, Arab area",
+      "mi": 0.9,
+      "etaMin": 3,
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors"
+    }
+  ]
+}

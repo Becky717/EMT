@@ -2,8 +2,6 @@
 
 A WebXR EMT patient-simulation game for Meta Quest 2 (Quest Browser). It also works as a normal web page on a phone or computer.
 
-Renaissance engineering lab: https://becky717.github.io/EMT/lab/
-
 - Open the page in Quest Browser and tap **ENTER VR**. Point the controller laser and pull the trigger to choose.
 - 8 NREMT-level patients: asthma, CHF (CPAP decision), opioid overdose, adult arrest with AED, infant arrest with 2 rescuers, ACS chest pain, anaphylaxis, and a severe bleed with shock. Plus 13 adaptive weak-spot case templates (see below).
 - Equipment and meds sit on a red crash cart as real-looking 3D models (NPA, OPA, BVM, NRB, AED, tourniquet, EpiPen, and more), each with its name underneath. Point at the item (or its label) to use it.
@@ -35,6 +33,29 @@ The game remembers what you miss and builds new cases around it.
 | Find + stop big bleeding first | Glass table / chainsaw / hockey skate, loud distracting complaint, bleed hidden under dark clothes | Bleeds out without a rapid scan |
 | BVM for inadequate breathing / ventilation rate | Sleeping pills + wine / toddler + grandpa's clonidine / Xanax + vodka | NRB and naloxone don't fix it; hypoxic arrest without BVM |
 | Early epi | Peanut "asthma" in a child (EpiPen Jr 0.15 mg) / restaurant "panic attack" / hornet sting, all with no hives | Anaphylactic shock closes the airway |
+
+
+
+## Local calls — North Alabama roads (📍)
+
+When **Local calls** is ON (default), every patient starts with a radio-style CAD dispatch on a **real public road or landmark** near Joppa / Arab / Guntersville / Cullman / Huntsville.
+
+- ~40 places from **OpenStreetMap** (Nominatim-verified). Attribution: © OpenStreetMap contributors (ODbL).
+- CAD line: unit, priority, real cross-streets / place, nature, caller. Map card + ETA from a fictional Station 2 in Arab.
+- Scene types matched to the case (MVC on US-231 / I-565, boat ramps at Lake Guntersville, farms on county roads, Walmart / Main St, schools, industrial parks).
+- Works with the original 8 patients **and** adaptive weak-spot cases.
+- The ER-bay 3D room stays (Quest 2 performance); a wall placard names the real scene.
+- Toggle: **📍 Local calls** on the menu. Progress is saved on this device.
+
+### Google Maps later (optional)
+
+No Google key is in this public repo. To add a Google map card or Photorealistic 3D Tiles later:
+
+1. Create a Google Maps Platform key (Maps JavaScript API; Map Tiles API if you want 3D).
+2. Before load: `window.EMT_GOOGLE_MAPS_KEY = '…'` (inject at runtime — never commit the key).
+3. Call `window.__emt.mapProviderInfo()` / `setMapProvider('google')` from `maps.js`.
+
+Until then the game uses the static OSM location library + optional OSM raster tiles on the map card.
 
 ## Files
 - `rules.js`: all of the medical and physiology rules (AHA 2020 guidelines plus later focused updates, EMT scope). Local protocols vary.

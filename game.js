@@ -6,13 +6,14 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { GEO, mergeKit, kitGroup, buildEquip, buildO2Tank, hose, EQUIP, EQUIP_LABEL } from './models.js';
 import { SCENARIOS, ACTIONS, TABS, GENERIC, isTreatment, clamp } from './rules.js';
 import { recordRound, makeCase, makeTemplate, TEMPLATE_IDS, pickSkill, topSkills, skillLabel, resetSkills, skillData } from './adaptive.js';
+import { localizeScenario, isLocalOn, toggleLocal, paintMapCardSync, ATTRIBUTION, AREA, LOCATIONS, mapProviderInfo, STATION } from './maps.js';
 
 const TIME_LIMIT = 300;
 const SKIN = { normal: 0xd9a27e, pale: 0xe6d3c4, cyanotic: 0x8f9bbd, flushed: 0xe0776a, mottled: 0xb9a4a8 };
 const TONE = { info: '#e8eef7', good: '#5ee08a', bad: '#ff7b7b', warn: '#ffc857', say: '#7fd6ff', head: '#ffc857' };
 
 // ======================= GAME STATE =======================
-let mode = 'menu', S = null, scnIndex = 0, tab = 0, page = 0, seated = false, flash = null, adScn = null, resetArm = false;
+let mode = 'menu', S = null, scnIndex = 0, tab = 0, page = 0, seated = false, flash = null, adScn = null, resetArm = false, pendingScn = null;
 const best = JSON.parse(localStorage.getItem('emtvr_best') || '{}');
 
 function newState(scn) {
@@ -38,14 +39,35 @@ function makeApi(s) {
     end: (o, msg) => endScenario(s, o, msg),
   };
 }
+function beginPlay(scn, isAdaptive) {
+  const loc = localizeScenario(scn);
+  adScn = isAdaptive ? loc : null;
+  if (loc.local) {
+    pendingScn = loc; S = null; mode = 'dispatch'; page = 0;
+    updateSceneLabel(loc.local); rebuildPatientLook(); refreshAll();
+    return;
+  }
+  S = newState(loc); mode = 'play'; tab = 0; page = 0; pendingScn = null;
+  updateSceneLabel(null); rebuildPatientLook(); refreshAll();
+}
+function confirmDispatch() {
+  if (!pendingScn) return;
+  S = newState(pendingScn); mode = 'play'; tab = 0; page = 0;
+  // enrich log with ETA / map note
+  if (pendingScn.local) {
+    const L = pendingScn.local;
+    S.log.push({ text: `MAP: ${L.loc.cadPlace} · ETA ${L.etaMin} min (${L.mi} mi from ${L.from})`, tone: 'say' });
+    S.log.push({ text: ATTRIBUTION, tone: 'info' });
+  }
+  pendingScn = null; rebuildPatientLook(); refreshAll();
+}
 function startScenario(i) {
-  scnIndex = (i + SCENARIOS.length) % SCENARIOS.length; adScn = null; S = newState(SCENARIOS[scnIndex]); mode = 'play'; tab = 0; page = 0;
-  rebuildPatientLook(); refreshAll();
+  scnIndex = (i + SCENARIOS.length) % SCENARIOS.length;
+  beginPlay(SCENARIOS[scnIndex], false);
 }
 // adaptive "weak spot" case (generated in adaptive.js)
 function startCase(scn) {
-  adScn = scn || makeCase(); S = newState(adScn); mode = 'play'; tab = 0; page = 0;
-  rebuildPatientLook(); refreshAll();
+  beginPlay(scn || makeCase(), true);
 }
 function doAction(id) {
   if (mode !== 'play' || !S || S.ended) return;
@@ -117,10 +139,24 @@ function model() {
     title: 'EMT Sim VR', right: '', align: 'top',
     lines: [{ text: 'Pick a patient. 3-5 min each. Scene safety first, then assess, treat, transport.', tone: 'info' },
             { text: `🎯 Weak spots: a new case built from your misses. Next: ${skillLabel(pickSkill())}`, tone: 'warn' },
+            { text: isLocalOn() ? `📍 Local calls ON — real North AL roads (OSM). ${LOCATIONS.length} places.` : '📍 Local calls OFF — generic settings.', tone: 'say' },
             { text: 'VR: laser + trigger. Gear and meds are on the red cart.', tone: 'say' }],
     cols: 2, buttons: [...SCENARIOS.map((sc, i) => ({ id: 'scn:' + i, label: sc.title + (best[sc.id] != null ? `  ★${best[sc.id]}` : '') })),
       { id: 'adaptive', label: '🎯 Weak spots (adaptive)', primary: true }, { id: 'progress', label: '📊 My weak spots' },
-      { id: 'random', label: '🎲 Random patient' }, { id: 'seat', label: seated ? 'Seated mode: ON' : 'Seated mode: OFF' }] };
+      { id: 'random', label: '🎲 Random patient' },
+      { id: 'local', label: isLocalOn() ? '📍 Local calls: ON' : '📍 Local calls: OFF', primary: isLocalOn() },
+      { id: 'seat', label: seated ? 'Seated mode: ON' : 'Seated mode: OFF' }] };
+  if (mode === 'dispatch' && pendingScn) {
+    const L = pendingScn.local;
+    const lines = [
+      { text: '📻 ' + (L?.cad || pendingScn.dispatch), tone: 'head' },
+      { text: L ? `${L.loc.cadPlace}` : '', tone: 'warn' },
+      { text: L ? `ETA ${L.etaMin} min · ${L.mi} mi from ${L.from} · Scene: ${L.sceneType}` : '', tone: 'say' },
+      { text: ATTRIBUTION, tone: 'info' },
+    ].filter(x => x.text);
+    return { title: 'Dispatch', right: pendingScn.title, align: 'top', map: true, lines,
+      cols: 2, buttons: [{ id: 'respond', label: '🚑 Respond / ENTER SCENE', primary: true }, { id: 'menu', label: 'Cancel' }] };
+  }
   if (mode === 'progress') {
     const top = topSkills(6), d = skillData(), days = Math.ceil((new Date(2026, 11, 12) - new Date()) / 864e5);
     const L = [{ text: `Rounds played: ${d.rounds}${days > 0 ? `  •  NREMT in ${days} days` : ''}`, tone: 'info' }];
@@ -152,8 +188,10 @@ function onButton(id) {
     case 'adaptive': resetArm = false; return startCase(makeCase(S && S.adNext !== undefined && mode === 'debrief' ? S.adNext : undefined));
     case 'progress': resetArm = false; mode = 'progress'; S = null; page = 0; rebuildPatientLook(); return refreshAll();
     case 'reset': if (resetArm) { resetSkills(); resetArm = false; } else resetArm = true; return refreshAll();
+    case 'local': toggleLocal(); return refreshAll();
+    case 'respond': return confirmDispatch();
     case 'seat': seated = !seated; world.position.y = seated ? -0.45 : 0; return refreshAll();
-    case 'menu': resetArm = false; mode = 'menu'; S = null; rebuildPatientLook(); return refreshAll();
+    case 'menu': resetArm = false; mode = 'menu'; S = null; pendingScn = null; updateSceneLabel(null); rebuildPatientLook(); return refreshAll();
     case 'replay': return adScn ? startCase(adScn) : startScenario(scnIndex);
     case 'next': if (adScn) { mode = 'menu'; S = null; adScn = null; rebuildPatientLook(); return refreshAll(); } return startScenario(scnIndex + 1);
     case 'pgPrev': page = Math.max(0, page - 1); return refreshAll();
@@ -225,6 +263,32 @@ const STR_Y = 0.68, MT = 0.775; // MT = mattress (sheet) top
   // IV pole + bag at head end
   mk('cyl', metal, 0.025, 1.95, 0.025, -1.05, 0.98, -1.7); mk('cyl', metal, 0.3, 0.02, 0.02, -1.05, 1.95, -1.7).rotation.z = Math.PI / 2;
   addM(new RoundedBoxGeometry(0.12, 0.2, 0.035, 2, 0.015), std(0xe0f2fe, { transparent: true, opacity: 0.6, roughness: 0.1 }), world, [-1.15, 1.8, -1.7]);
+}
+
+
+// Scene address placard (ER bay stays; label names the real-road scene)
+const sceneLabel = { mesh: null, tex: null, ctx: null, canvas: null };
+(function makeSceneLabel() {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 128;
+  const ctx = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.3), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+  mesh.position.set(0, 2.85, -3.35); world.add(mesh); mesh.visible = false;
+  sceneLabel.mesh = mesh; sceneLabel.tex = tex; sceneLabel.ctx = ctx; sceneLabel.canvas = c;
+})();
+function updateSceneLabel(local) {
+  const { mesh, ctx, canvas: c, tex } = sceneLabel;
+  if (!local || !local.loc) { mesh.visible = false; return; }
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.fillStyle = 'rgba(11,18,32,0.92)'; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.strokeStyle = '#2f9e6a'; ctx.lineWidth = 4; ctx.strokeRect(2, 2, c.width - 4, c.height - 4);
+  ctx.fillStyle = '#5ee08a'; ctx.font = 'bold 28px system-ui'; ctx.fillText('SCENE', 24, 40);
+  ctx.fillStyle = '#e8eef7'; ctx.font = 'bold 36px system-ui';
+  const place = local.loc.cadPlace;
+  ctx.fillText(place.length > 48 ? place.slice(0, 46) + '…' : place, 24, 88);
+  ctx.fillStyle = '#ffc857'; ctx.font = '22px ui-monospace, monospace';
+  ctx.fillText(local.sceneType.toUpperCase() + '  ·  ETA ' + local.etaMin + ' min', 700, 40);
+  tex.needsUpdate = true; mesh.visible = true;
 }
 
 // ======================= PATIENT =======================
@@ -552,8 +616,17 @@ function drawMain() {
   const cols = m.cols, bh = m.question ? 82 : 86, gap = 14, rows = Math.ceil(m.buttons.length / cols), bw = (W - 80 - gap * (cols - 1)) / cols;
   const btnTop = H - 32 - rows * bh - (rows - 1) * gap;
   m.buttons.forEach((b, i) => { const bb = { id: b.id, x: 40 + (i % cols) * (bw + gap), y: btnTop + Math.floor(i / cols) * (bh + gap), w: bw, h: bh }; Pn.buttons.push(bb); drawBtn(c, Pn, bb, b.label, { primary: b.primary, left: !!m.question, size: m.question ? 34 : 34 }); });
+  // dispatch map card (VR panel texture)
+  let top = 110;
+  if (m.map && pendingScn && pendingScn.local) {
+    const mw = W - 80, mh = 280;
+    c.save(); c.translate(40, 100);
+    paintMapCardSync(c, mw, mh, pendingScn.local);
+    c.restore();
+    top = 100 + mh + 20;
+  }
   // text
-  let bottom = btnTop - 22; const top = 110, fs = 34, lh = 43;
+  let bottom = btnTop - 22; const fs = 34, lh = 43;
   if (m.question) {
     c.font = 'bold 42px system-ui'; const ql = wrap(c, m.question, W - 80);
     c.fillStyle = '#ffc857'; ql.forEach((l, i) => c.fillText(l, 40, bottom - (ql.length - 1 - i) * 52)); bottom -= ql.length * 52 + 18;
@@ -679,7 +752,15 @@ function drawDom() {
   $('d-title').textContent = m.title + (m.right ? '  ·  ' + m.right : '');
   const s = S;
   $('d-vitals').textContent = s && mode === 'play' ? vitalsLine(s) : '';
-  $('d-lines').innerHTML = (mode === 'play' ? m.lines.slice(-8) : m.lines).map(L => `<div style="color:${TONE[L.tone]}">${esc(L.text)}</div>`).join('');
+  let mapHtml = '';
+  if (m.map && pendingScn && pendingScn.local) {
+    const c = document.createElement('canvas'); c.width = 640; c.height = 220; c.style.cssText = 'width:100%;border-radius:10px;margin:6px 0';
+    paintMapCardSync(c.getContext('2d'), c.width, c.height, pendingScn.local);
+    mapHtml = `<div id="d-map"></div>`;
+    // defer paint into DOM after innerHTML
+    queueMicrotask(() => { const box = $('d-map'); if (box) { box.innerHTML = ''; box.appendChild(c); } });
+  }
+  $('d-lines').innerHTML = mapHtml + (mode === 'play' ? m.lines.slice(-8) : m.lines).map(L => `<div style="color:${TONE[L.tone]}">${esc(L.text)}</div>`).join('');
   if (mode === 'play') $('d-lines').scrollTop = 1e6;
   $('d-q').textContent = m.question || '';
   $('d-buttons').innerHTML = m.buttons.filter(b => !b.id.startsWith('pg')).map(b => `<button data-id="${b.id}" class="${b.primary ? 'pri' : ''}">${esc(b.label)}</button>`).join('');
@@ -774,4 +855,6 @@ renderer.setAnimationLoop(now => {
   renderer.render(scene, camera);
 });
 rebuildPatientLook(); refreshAll();
-window.__emt = { P, start: startScenario, startCase, makeCase, makeTemplate, TEMPLATE_IDS, pickSkill, skills: skillData, topSkills, act: doAction, answer: answerPrompt, state: () => S, tick, mode: () => mode, onButton, camera, renderer, scene, trayItems, hover: setHover };
+function startAuto(i) { startScenario(i); if (mode === 'dispatch') confirmDispatch(); }
+function startCaseAuto(scn) { startCase(scn); if (mode === 'dispatch') confirmDispatch(); }
+window.__emt = { P, start: startAuto, startCase: startCaseAuto, makeCase, makeTemplate, TEMPLATE_IDS, pickSkill, skills: skillData, topSkills, act: doAction, answer: answerPrompt, state: () => S, tick, mode: () => mode, onButton, camera, renderer, scene, trayItems, hover: setHover, confirmDispatch, pending: () => pendingScn, localOn: isLocalOn, toggleLocal, locations: LOCATIONS, station: STATION, mapProviderInfo, attribution: ATTRIBUTION };
